@@ -36,62 +36,139 @@
         </tr>
         <tr>
             <td class="method">
-                 <pre><code>
-class RecurrentModel(nn.Module):
-    """
-        Initializes a RecurrentModel instance.
+                <pre><code>
+class MulticlassPrototypicalClassifier(nn.Module):
+
+    def __init__(self, device='cpu'):
+        """
+        Initializes a MulticlassPrototypicalClassifier instance.
 
         Args:
-        - input_size (int): The size of the input.
-        - hidden_size (int): The size of the hidden state.
         - device (str): The device to run the model on. Default is 'cpu'.
-    """
-    def __init__(self, input_size, hidden_size, device='cpu'):
-        super(RecurrentModel, self).__init__()
+        """
+        super(MulticlassPrototypicalClassifier, self).__init__()
         self.device = device
-        self.hidden_size = hidden_size
-        self.gru = nn.GRU(input_size, hidden_size, batch_first=True)
 
-    def forward(self, x):
+
+    def get_oh_labels(
+        self,
+        decimal_labels,
+        n_way):
+        """
+        Generates one-hot encoded labels.
+
+        Args:
+        - decimal_labels (torch.Tensor): Decimal labels.
+        - n_way (int): Number of classes.
+
+        Returns:
+        - torch.Tensor: One-hot encoded labels.
+        """
+        # create placeholder for one_hot encoding:
+        labels_onehot = torch.zeros(
+            [decimal_labels.size()[0],
+            n_way], device=self.device)
+        # transform to one_hot encoding:
+        labels_onehot = labels_onehot.scatter(
+            1,
+            decimal_labels,
+            1)
+        return labels_onehot
+
+
+    def get_centroids(
+            self,
+            hidden_vectors,
+            onehot_labels):
+        """
+        Computes centroids of clusters.
+
+        Args:
+        - hidden_vectors (torch.Tensor): Hidden vectors.
+        - onehot_labels (torch.Tensor): One-hot encoded labels.
+
+        Returns:
+        - torch.Tensor: Centroids of clusters.
+        - torch.Tensor: Missing clusters.
+        """
+
+        cluster_agg = onehot_labels.T @ hidden_vectors
+        samples_per_cluster = onehot_labels.sum(0)
+        centroids = torch.zeros_like(cluster_agg, device=self.device)
+        missing_clusters = samples_per_cluster == 0
+        existent_centroids = cluster_agg[~missing_clusters] / \
+            samples_per_cluster[~missing_clusters].unsqueeze(-1)
+        centroids[~missing_clusters] = existent_centroids
+        assert torch.all(centroids[~missing_clusters] == existent_centroids)
+        return centroids, missing_clusters
+    
+
+    def forward(self, hidden_vectors, labels, known_attacks_count, query_mask):
         """
         Defines the forward pass of the model.
 
         Args:
-        - x (torch.Tensor): Input tensor.
+        - hidden_vectors (torch.Tensor): Hidden vectors.
+        - labels (torch.Tensor): Labels.
+        - known_attacks_count (int): Current number of known attacks.
+        - query_mask (torch.Tensor): Mask for queries.
 
         Returns:
-        - torch.Tensor: Output tensor after passing through the GRU layer.
+        - torch.Tensor: Scores.
         """
-        # Initialize hidden state
-        h0 = torch.zeros(1, x.size(0), self.hidden_size).to(x.device)
-        
-        # Forward pass through GRU layer
-        out, _ = self.gru(x, h0)
-        
-        return F.relu(out[:, -1, :])
+        # get one_hot_labels of current batch:
+        oh_labels = self.get_oh_labels(
+            decimal_labels=labels.long(),
+            n_way=known_attacks_count)
 
+        # get latent centroids:
+        centroids, _ = self.get_centroids(
+            hidden_vectors[~query_mask],
+            oh_labels[~query_mask])
 
-    </code></pre>    </p>
+        # compute scores:
+        scores = 1 / (torch.cdist(hidden_vectors[query_mask], centroids) + 1e-10)
+
+        return scores
+                </code></pre>
             </td>
             <td>
-                 
-    <p>
-           
-    <ul>
-        <li><strong>input_size</strong>: The size of the input data.</li>
-        <li><strong>hidden_size</strong>: The size of the hidden state.</li>
-        <li><strong>device</strong>: The device to run the model on. Default is 'cpu'.</li>
-    </ul>
-    <p>
-        The <code>forward</code> method defines the forward pass of the model. It takes an input tensor <code>x</code> and returns the output tensor after passing through the GRU layer. The hidden state is initialized with zeros and updated during the forward pass.
-    </p>
+                <p>
+                    Il metodo `MulticlassPrototypicalClassifier` definisce un classificatore per l'apprendimento prototipico multiclasse. Questo classificatore è progettato per gestire dati suddivisi in più classi e calcola i prototipi dei cluster per effettuare le predizioni.
+                </p>
+                <p>
+                    <strong>Metodo `__init__`:</strong>
+                    <ul>
+                        <li>Questo metodo è il costruttore della classe e inizializza un'istanza del classificatore prototipico multiclasse.</li>
+                        <li>Accetta un parametro `device` che specifica il dispositivo su cui eseguire il modello (il valore predefinito è 'cpu').</li>
+                    </ul>
+                </p>
+                <p>
+                    <strong>Metodo `get_oh_labels`:</strong>
+                    <ul>
+                        <li>Questo metodo genera etichette codificate one-hot a partire da etichette decimali.</li>
+                        <li>Prende come argomenti le etichette decimali e il numero di classi (`n_way`).</li>
+                        <li>Restituisce le etichette codificate one-hot.</li>
+                    </ul>
+                </p>
+                <p>
+                    <strong>Metodo `get_centroids`:</strong>
+                    <ul>
+                        <li>Questo metodo calcola i centroidi dei cluster basandosi sui vettori nascosti e sulle etichette codificate one-hot.</li>
+                        <li>Prende come argomenti i vettori nascosti e le etichette codificate one-hot.</li>
+                        <li>Restituisce i centroidi dei cluster e un indicatore per i cluster mancanti.</li>
+                    </ul>
+                </p>
+                <p>
+                    <strong>Metodo `forward`:</strong>
+                    <ul>
+                        <li>Questo metodo definisce il passaggio in avanti del modello, che calcola i punteggi per ogni campione di input in base ai suoi vettori nascosti, etichette, numero di attacchi conosciuti e maschera di query.</li>
+                        <li>Prende come argomenti i vettori nascosti, le etichette, il numero di attacchi conosciuti e la maschera di query.</li>
+                        <li>Restituisce i punteggi calcolati.</li>
+                    </ul>
+                </p>
             </td>
         </tr>
     </table>
-
-   
-
-  
-
 </body>
 </html>
