@@ -50,6 +50,9 @@
         .string {
             color: #CE9178;
         }
+        .type {
+            color: #4EC9B0;
+        }
     </style>
 </head>
 <body>
@@ -62,7 +65,7 @@
         <tr>
             <td class="method">
                 <pre><code>
-<span class="keyword">class</span> MulticlassPrototypicalClassifier(nn.Module):
+<span class="keyword">class</span> MulticlassPrototypicalClassifier(<span class="type">nn.Module</span>):
 
     <span class="keyword">def</span> __init__(self, device='cpu'):
         """
@@ -92,11 +95,11 @@
         Generates one-hot encoded labels.
 
         Args:
-        - decimal_labels (torch.Tensor): Decimal labels.
+        - decimal_labels (<span class="type">torch.Tensor</span>): Decimal labels.
         - n_way (int): Number of classes.
 
         Returns:
-        - torch.Tensor: One-hot encoded labels.
+        - <span class="type">torch.Tensor</span>: One-hot encoded labels.
         """
         # create placeholder for one_hot encoding:
         labels_onehot = torch.zeros(
@@ -127,12 +130,12 @@
         Computes centroids of clusters.
 
         Args:
-        - hidden_vectors (torch.Tensor): Hidden vectors.
-        - onehot_labels (torch.Tensor): One-hot encoded labels.
+        - hidden_vectors (<span class="type">torch.Tensor</span>): Hidden vectors.
+        - onehot_labels (<span class="type">torch.Tensor</span>): One-hot encoded labels.
 
         Returns:
-        - torch.Tensor: Centroids of clusters.
-        - torch.Tensor: Missing clusters.
+        - <span class="type">torch.Tensor</span>: Centroids of clusters.
+        - <span class="type">torch.Tensor</span>: Missing clusters.
         """
 
         cluster_agg = onehot_labels.T @ hidden_vectors
@@ -160,13 +163,13 @@
         Defines the forward pass of the model.
 
         Args:
-        - hidden_vectors (torch.Tensor): Hidden vectors.
-        - labels (torch.Tensor): Labels.
+        - hidden_vectors (<span class="type">torch.Tensor</span>): Hidden vectors.
+        - labels (<span class="type">torch.Tensor</span>): Labels.
         - known_attacks_count (int): Current number of known attacks.
-        - query_mask (torch.Tensor): Mask for queries.
+        - query_mask (<span class="type">torch.Tensor</span>): Mask for queries.
 
         Returns:
-        - torch.Tensor: Scores.
+        - <span class="type">torch.Tensor</span>: Scores.
         """
         # get one_hot_labels of current batch:
         oh_labels = self.get_oh_labels(
@@ -186,10 +189,4 @@
             </td>
             <td>
                 <p>
-                    The <code>forward</code> method defines the forward pass of the model, which computes scores for each input sample based on its hidden vectors, labels, number of known attacks, and query mask. It takes hidden vectors, labels, the number of known attacks, and the query mask as arguments. It returns the computed scores.
-                </p>
-            </td>
-        </tr>
-    </table>
-</body>
-</html>
+                    The <code>forward</code> method defines the forward pass of the model, which computes scores for each input sample based on its hidden vectors, labels, number of known attacks, and query mask
