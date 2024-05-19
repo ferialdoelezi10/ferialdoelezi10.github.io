@@ -48,8 +48,17 @@ class MulticlassPrototypicalClassifier(nn.Module):
         """
         super(MulticlassPrototypicalClassifier, self).__init__()
         self.device = device
-
-
+                </code></pre>
+            </td>
+            <td>
+                <p>
+                    Il metodo `__init__` è il costruttore della classe e inizializza un'istanza del classificatore prototipico multiclasse. Accetta un parametro `device` che specifica il dispositivo su cui eseguire il modello (il valore predefinito è 'cpu').
+                </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="method">
+                <pre><code>
     def get_oh_labels(
         self,
         decimal_labels,
@@ -74,8 +83,17 @@ class MulticlassPrototypicalClassifier(nn.Module):
             decimal_labels,
             1)
         return labels_onehot
-
-
+                </code></pre>
+            </td>
+            <td>
+                <p>
+                    Il metodo `get_oh_labels` genera etichette codificate one-hot a partire da etichette decimali. Prende come argomenti le etichette decimali e il numero di classi (`n_way`). Restituisce le etichette codificate one-hot.
+                </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="method">
+                <pre><code>
     def get_centroids(
             self,
             hidden_vectors,
@@ -101,8 +119,17 @@ class MulticlassPrototypicalClassifier(nn.Module):
         centroids[~missing_clusters] = existent_centroids
         assert torch.all(centroids[~missing_clusters] == existent_centroids)
         return centroids, missing_clusters
-    
-
+                </code></pre>
+            </td>
+            <td>
+                <p>
+                    Il metodo `get_centroids` calcola i centroidi dei cluster basandosi sui vettori nascosti e sulle etichette codificate one-hot. Prende come argomenti i vettori nascosti e le etichette codificate one-hot. Restituisce i centroidi dei cluster e un indicatore per i cluster mancanti.
+                </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="method">
+                <pre><code>
     def forward(self, hidden_vectors, labels, known_attacks_count, query_mask):
         """
         Defines the forward pass of the model.
@@ -134,38 +161,7 @@ class MulticlassPrototypicalClassifier(nn.Module):
             </td>
             <td>
                 <p>
-                    Il metodo `MulticlassPrototypicalClassifier` definisce un classificatore per l'apprendimento prototipico multiclasse. Questo classificatore è progettato per gestire dati suddivisi in più classi e calcola i prototipi dei cluster per effettuare le predizioni.
-                </p>
-                <p>
-                    <strong>Metodo `__init__`:</strong>
-                    <ul>
-                        <li>Questo metodo è il costruttore della classe e inizializza un'istanza del classificatore prototipico multiclasse.</li>
-                        <li>Accetta un parametro `device` che specifica il dispositivo su cui eseguire il modello (il valore predefinito è 'cpu').</li>
-                    </ul>
-                </p>
-                <p>
-                    <strong>Metodo `get_oh_labels`:</strong>
-                    <ul>
-                        <li>Questo metodo genera etichette codificate one-hot a partire da etichette decimali.</li>
-                        <li>Prende come argomenti le etichette decimali e il numero di classi (`n_way`).</li>
-                        <li>Restituisce le etichette codificate one-hot.</li>
-                    </ul>
-                </p>
-                <p>
-                    <strong>Metodo `get_centroids`:</strong>
-                    <ul>
-                        <li>Questo metodo calcola i centroidi dei cluster basandosi sui vettori nascosti e sulle etichette codificate one-hot.</li>
-                        <li>Prende come argomenti i vettori nascosti e le etichette codificate one-hot.</li>
-                        <li>Restituisce i centroidi dei cluster e un indicatore per i cluster mancanti.</li>
-                    </ul>
-                </p>
-                <p>
-                    <strong>Metodo `forward`:</strong>
-                    <ul>
-                        <li>Questo metodo definisce il passaggio in avanti del modello, che calcola i punteggi per ogni campione di input in base ai suoi vettori nascosti, etichette, numero di attacchi conosciuti e maschera di query.</li>
-                        <li>Prende come argomenti i vettori nascosti, le etichette, il numero di attacchi conosciuti e la maschera di query.</li>
-                        <li>Restituisce i punteggi calcolati.</li>
-                    </ul>
+                    Il metodo `forward` definisce il passaggio in avanti del modello, che calcola i punteggi per ogni campione di input in base ai suoi vettori nascosti, etichette, numero di attacchi conosciuti e maschera di query. Prende come argomenti i vettori nascosti, le etichette, il numero di attacchi conosciuti e la maschera di query. Restituisce i punteggi calcolati.
                 </p>
             </td>
         </tr>
