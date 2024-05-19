@@ -25,6 +25,9 @@
         .method {
             background-color: #f8f8f8;
         }
+        .keyword {
+            color: #569cd6; /* Blue */
+        }
     </style>
 </head>
 <body>
@@ -37,9 +40,9 @@
         <tr>
             <td class="method">
                 <pre><code>
-class MulticlassPrototypicalClassifier(nn.Module):
+<span class="keyword">class</span> MulticlassPrototypicalClassifier(nn.Module):
 
-    def __init__(self, device='cpu'):
+    <span class="keyword">def</span> __init__(self, device='cpu'):
         """
         Initializes a MulticlassPrototypicalClassifier instance.
 
@@ -52,14 +55,14 @@ class MulticlassPrototypicalClassifier(nn.Module):
             </td>
             <td>
                 <p>
-                    The `__init__` method is the constructor of the class and initializes an instance of the multiclass prototypical classifier. It accepts a `device` parameter that specifies the device to run the model on (default is 'cpu').
+                    The <code>__init__</code> method is the constructor of the class and initializes an instance of the multiclass prototypical classifier. It accepts a <code>device</code> parameter that specifies the device to run the model on (default is 'cpu').
                 </p>
             </td>
         </tr>
         <tr>
             <td class="method">
                 <pre><code>
-    def get_oh_labels(
+    <span class="keyword">def</span> get_oh_labels(
         self,
         decimal_labels,
         n_way):
@@ -87,14 +90,14 @@ class MulticlassPrototypicalClassifier(nn.Module):
             </td>
             <td>
                 <p>
-                    The `get_oh_labels` method generates one-hot encoded labels from decimal labels. It takes decimal labels and the number of classes (`n_way`) as arguments. It returns the one-hot encoded labels.
+                    The <code>get_oh_labels</code> method generates one-hot encoded labels from decimal labels. It takes decimal labels and the number of classes (<code>n_way</code>) as arguments. It returns the one-hot encoded labels.
                 </p>
             </td>
         </tr>
         <tr>
             <td class="method">
                 <pre><code>
-    def get_centroids(
+    <span class="keyword">def</span> get_centroids(
             self,
             hidden_vectors,
             onehot_labels):
@@ -123,14 +126,14 @@ class MulticlassPrototypicalClassifier(nn.Module):
             </td>
             <td>
                 <p>
-                    The `get_centroids` method computes centroids of clusters based on hidden vectors and one-hot encoded labels. It takes hidden vectors and one-hot encoded labels as arguments. It returns the centroids of clusters and an indicator for missing clusters.
+                    The <code>get_centroids</code> method computes centroids of clusters based on hidden vectors and one-hot encoded labels. It takes hidden vectors and one-hot encoded labels as arguments. It returns the centroids of clusters and an indicator for missing clusters.
                 </p>
             </td>
         </tr>
         <tr>
             <td class="method">
                 <pre><code>
-    def forward(self, hidden_vectors, labels, known_attacks_count, query_mask):
+    <span class="keyword">def</span> forward(self, hidden_vectors, labels, known_attacks_count, query_mask):
         """
         Defines the forward pass of the model.
 
@@ -161,7 +164,7 @@ class MulticlassPrototypicalClassifier(nn.Module):
             </td>
             <td>
                 <p>
-                    The `forward` method defines the forward pass of the model, which computes scores for each input sample based on its hidden vectors, labels, number of known attacks, and query mask. It takes hidden vectors, labels, the number of known attacks, and the query mask as arguments. It returns the computed scores.
+                    The <code>forward</code> method defines the forward pass of the model, which computes scores for each input sample based on its hidden vectors, labels, number of known attacks, and query mask. It takes hidden vectors, labels, the number of known attacks, and the query mask as arguments. It returns the computed scores.
                 </p>
             </td>
         </tr>
