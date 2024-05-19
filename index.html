@@ -1,0 +1,88 @@
+| Metodo                       | Descrizione                                                                                                        |
+|-----------------------------|--------------------------------------------------------------------------------------------------------------------|
+| **RecurrentModel**          | Inizializza un'istanza di RecurrentModel.                                                                         |
+|                             | Args:                                                                                                              |
+|                             | - input_size (int): Dimensione dell'input.                                                                        |
+|                             | - hidden_size (int): Dimensione dello stato nascosto.                                                              |
+|                             | - device (str): Il dispositivo su cui eseguire il modello. Default è 'cpu'.                                       |
+|                             |                                                                                                                    |
+|                             | **forward(self, x):**                                                                                             |
+|                             | Definisce il passaggio in avanti del modello.                                                                      |
+|                             | Args:                                                                                                              |
+|                             | - x (torch.Tensor): Tensor di input.                                                                              |
+|                             |                                                                                                                    |
+|                             | **MulticlassPrototypicalClassifier**                                                                               |
+|                             | Inizializza un'istanza di MulticlassPrototypicalClassifier.                                                       |
+|                             | Args:                                                                                                              |
+|                             | - device (str): Il dispositivo su cui eseguire il modello. Default è 'cpu'.                                       |
+|                             |                                                                                                                    |
+|                             | **get_oh_labels(self, decimal_labels, n_way):**                                                                    |
+|                             | Genera etichette codificate one-hot.                                                                              |
+|                             | Args:                                                                                                              |
+|                             | - decimal_labels (torch.Tensor): Etichette decimali.                                                               |
+|                             | - n_way (int): Numero di classi.                                                                                  |
+|                             |                                                                                                                    |
+|                             | **get_centroids(self, hidden_vectors, onehot_labels):**                                                           |
+|                             | Calcola i centroidi dei cluster.                                                                                  |
+|                             | Args:                                                                                                              |
+|                             | - hidden_vectors (torch.Tensor): Vettori nascosti.                                                                |
+|                             | - onehot_labels (torch.Tensor): Etichette codificate one-hot.                                                      |
+|                             |                                                                                                                    |
+|                             | **forward(self, hidden_vectors, labels, known_attacks_count, query_mask):**                                       |
+|                             | Definisce il passaggio in avanti del modello.                                                                      |
+|                             | Args:                                                                                                              |
+|                             | - hidden_vectors (torch.Tensor): Vettori nascosti.                                                                |
+|                             | - labels (torch.Tensor): Etichette.                                                                               |
+|                             | - known_attacks_count (int): Numero attuale di attacchi conosciuti.                                               |
+|                             | - query_mask (torch.Tensor): Maschera per le query.                                                               |
+|                             |                                                                                                                    |
+| **MultiClassFlowClassifier**| Inizializza un'istanza di MultiClassFlowClassifier.                                                                |
+|                             | Args:                                                                                                              |
+|                             | - input_size (int): Dimensione dell'input.                                                                        |
+|                             | - hidden_size (int): Dimensione dello stato nascosto.                                                              |
+|                             | - dropout_prob (float): Probabilità di dropout. Default è 0.2.                                                     |
+|                             | - kr_heads (int): Numero di testate per il regressore del kernel. Default è 8.                                      |
+|                             | - device (str): Il dispositivo su cui eseguire il modello. Default è 'cpu'.                                       |
+|                             |                                                                                                                    |
+|                             | **forward(self, x, labels, curr_known_attack_count, query_mask):**                                                |
+|                             | Definisce il passaggio in avanti del modello.                                                                      |
+|                             | Args:                                                                                                              |
+|                             | - x (torch.Tensor): Tensor di input.                                                                              |
+|                             | - labels (torch.Tensor): Etichette.                                                                               |
+|                             | - curr_known_attack_count (int): Numero attuale di attacchi conosciuti.                                           |
+|                             | - query_mask (torch.Tensor): Maschera per le query.                                                               |
+|                             |                                                                                                                    |
+| **TwoStreamMulticlassFlowClassifier**| Inizializza un'istanza di TwoStreamMulticlassFlowClassifier.                                                  |
+|                             | Args:                                                                                                              |
+|                             | - flow_input_size (int): Dimensione dell'input per lo stream di flusso.                                           |
+|                             | - second_stream_input_size (int): Dimensione dell'input per il secondo stream.                                     |
+|                             | - hidden_size (int): Dimensione dello stato nascosto.                                                              |
+|                             | - dropout_prob (float): Probabilità di dropout. Default è 0.2.                                                     |
+|                             | - kr_heads (int): Numero di testate per il regressore del kernel. Default è 8.                                      |
+|                             | - device (str): Il dispositivo su cui eseguire il modello. Default è 'cpu'.                                       |
+|                             |                                                                                                                    |
+|                             | **forward(self, flows, second_domain_feats, labels, curr_known_attack_count, query_mask):**                       |
+|                             | Definisce il passaggio in avanti del modello.                                                                      |
+|                             | Args:                                                                                                              |
+|                             | - flows (torch.Tensor): Tensor di input per lo stream di flusso.                                                   |
+|                             | - second_domain_feats (torch.Tensor): Tensor di input per il secondo stream.                                       |
+|                             | - labels (torch.Tensor): Etichette.                                                                               |
+|                             | - curr_known_attack_count (int): Numero attuale di attacchi conosciuti.                                           |
+|                             | - query_mask (torch.Tensor): Maschera per le query.                                                               |
+|                             |                                                                                                                    |
+| **ThreeStreamMulticlassFlowClassifier**| Inizializza un'istanza di ThreeStreamMulticlassFlowClassifier.                                                |
+|                             | Args:                                                                                                              |
+|                             | - flow_input_size (int): Dimensione dell'input per lo stream di flusso.                                           |
+|                             | - second_stream_input_size (int): Dimensione dell'input per il secondo stream.                                     |
+|                             | - third_stream_input_size (int): Dimensione dell'input per il terzo stream.                                        |
+|                             | - hidden_size (int): Dimensione dello stato nascosto.                                                              |
+|                             | - dropout_prob (float): Probabilità di dropout. Default è 0.2.                                                     |
+|                             | - kr_heads (int): Numero di testate per il regressore del kernel. Default è 8.                                      |
+|                             | - device (str): Il dispositivo su cui eseguire il modello. Default è 'cpu'.                                       |
+|                             |                                                                                                                    |
+|                             | **forward(self, flows, second_domain_feats, third_domain_feats, labels, curr_known_attack_count, query_mask):**    |
+|                             | Definisce il passaggio in avanti del modello.                                                                      |
+|                             | Args:                                                                                                              |
+|                             | - flows (torch.Tensor): Tensor di input per lo stream di flusso.                                                   |
+|                             | - second_domain_feats (torch.Tensor): Tensor di input per il secondo stream.                                       |
+|                             | - third_domain_feats (torch.Tensor): Tensor di input per il terzo stream
