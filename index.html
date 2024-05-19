@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smartville</title>
+    <title>RecurrentModel Method</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -22,6 +22,9 @@
         th {
             background-color: #f2f2f2;
         }
+        .method {
+            background-color: #f8f8f8;
+        }
     </style>
 </head>
 <body>
@@ -32,30 +35,27 @@
             <th>Description</th>
         </tr>
         <tr>
-            <td><code>RecurrentModel(input_size, hidden_size, device='cpu')</code></td>
-            <td>Initializes a RecurrentModel instance.</td>
-        </tr>
-        <tr>
-            <td><code>forward(x: torch.Tensor) -> torch.Tensor</code></td>
-            <td>Defines the forward pass of the model.</td>
+            <td class="method">
+                <pre><code>RecurrentModel(input_size, hidden_size, device='cpu')</code></pre>
+            </td>
+            <td>
+                Initializes a RecurrentModel instance.
+            </td>
         </tr>
     </table>
 
     <h2>Method Details</h2>
-    <h3><code>RecurrentModel(input_size, hidden_size, device='cpu')</code></h3>
-    <p>Initializes a RecurrentModel instance.</p>
+    <p>
+        The <code>RecurrentModel</code> method initializes a recurrent neural network (RNN) model using the Gated Recurrent Unit (GRU) architecture. It takes the following arguments:
+    </p>
     <ul>
-        <li><strong>input_size</strong>: The size of the input.</li>
+        <li><strong>input_size</strong>: The size of the input data.</li>
         <li><strong>hidden_size</strong>: The size of the hidden state.</li>
         <li><strong>device</strong>: The device to run the model on. Default is 'cpu'.</li>
     </ul>
-
-    <h3><code>forward(x: torch.Tensor) -> torch.Tensor</code></h3>
-    <p>Defines the forward pass of the model.</p>
-    <ul>
-        <li><strong>x</strong>: Input tensor.</li>
-        <li><strong>Returns</strong>: Output tensor after passing through the GRU layer.</li>
-    </ul>
+    <p>
+        The <code>forward</code> method defines the forward pass of the model. It takes an input tensor <code>x</code> and returns the output tensor after passing through the GRU layer. The hidden state is initialized with zeros and updated during the forward pass.
+    </p>
 
     <h2>Python Code</h2>
     <pre><code>
