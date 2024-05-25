@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,6 +13,7 @@
             background-color: #f9f9f9;
             color: #333;
         }
+
         h1 {
             font-size: 3em;
             color: #0056b3;
@@ -19,12 +21,17 @@
             margin-top: 0;
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
         }
-        h2, h3, h4 {
+
+        h2,
+        h3,
+        h4 {
             color: #0056b3;
         }
+
         p {
             line-height: 1.6;
         }
+
         pre {
             background-color: #272822;
             color: #f8f8f2;
@@ -32,13 +39,16 @@
             border-radius: 8px;
             overflow-x: auto;
         }
+
         a {
             color: #0056b3;
             text-decoration: none;
         }
+
         a:hover {
             text-decoration: underline;
         }
+
         .container {
             max-width: 1200px;
             margin: auto;
@@ -47,14 +57,17 @@
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
             border-radius: 8px;
         }
+
         .header {
             text-align: center;
             padding-bottom: 20px;
             border-bottom: 2px solid #eee;
         }
+
         .content {
             padding: 20px 0;
         }
+
         img {
             max-width: 100%;
             height: auto;
@@ -63,33 +76,48 @@
             border: 1px solid #ddd;
             border-radius: 8px;
         }
+
         code {
             background: #eee;
             padding: 2px 4px;
             border-radius: 4px;
         }
+
+        .center {
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+            width: 90%;
+        }
     </style>
 </head>
+
 <body>
 
     <div class="container">
         <div class="header">
             <h1>Smartville</h1>
             <p>This is the official SmartVille repository</p>
-            <p>Smartville is an open-source testbed based on GNS3, Pytorch, and Docker for training and testing online intrusion detection systems based on machine learning.</p>
+            <p>Smartville is an open-source testbed based on GNS3, Pytorch, and Docker for training and testing online
+                intrusion detection systems based on machine learning.</p>
             <p>Feel free to contribute!</p>
-            <p>The related paper <em>"SmartVille: an open-source SDN online-intrusion detection testbed"</em> is under review. Stay tuned!</p>
+            <p>The related paper <em>"SmartVille: an open-source SDN online-intrusion detection testbed"</em> is under
+                review. Stay tuned!</p>
         </div>
 
         <div class="content">
-            <img src="https://github.com/DISTA-IoT/smartville/blob/release_1.0/readme_imgs/smartville.png" alt="Smartville Architecture Diagram">
-            
+            <img src="https://github.com/DISTA-IoT/smartville/blob/release_1.0/readme_imgs/smartville.png?raw=true"
+                alt="Smartville Architecture Diagram">
+
             <h2>Installation</h2>
             <h3>Setting Up the Program on a Native Linux Distribution or WSL</h3>
-            <p>This guide provides step-by-step instructions for setting up the testbed on a native Linux distribution. We have not verified if it works on the Windows Subsystem for Linux (WSL).</p>
+            <p>This guide provides step-by-step instructions for setting up the testbed on a native Linux distribution.
+                We have not verified if it works on the Windows Subsystem for Linux (WSL).</p>
 
             <h4>GNS3</h4>
-            <p>Install the GNS3 software following the official documentation at: <a href="https://docs.gns3.com/docs/getting-started/installation/linux/">https://docs.gns3.com/docs/getting-started/installation/linux/</a></p>
+            <p>Install the GNS3 software following the official documentation at: <a
+                    href="https://docs.gns3.com/docs/getting-started/installation/linux/">https://docs.gns3.com/docs/getting-started/installation/linux/</a>
+            </p>
             <p>Start the server either via GUI or by running:</p>
             <pre>gns3server</pre>
             <p>The server will run on <em>localhost:3080</em> as default.</p>
@@ -112,9 +140,11 @@
             <pre>python3 utils/star_topology.py</pre>
             <p>You will get in the GNS3 GUI a new project with this scenario.</p>
 
-            <img src="https://via.placeholder.com/800x400" alt="GNS3 Topology Diagram">
+            <img src="https://github.com/DISTA-IoT/smartville/blob/release_1.0/readme_imgs/topology.png?raw=true"
+                alt="GNS3 Topology Diagram" class="center">
         </div>
     </div>
 
 </body>
+
 </html>
