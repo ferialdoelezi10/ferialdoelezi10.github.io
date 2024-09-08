@@ -64,533 +64,221 @@
                 includes a confidence decoder to assess the reliability of predictions and specialized loss functions to
                 optimize the models during training.</p>
 
-            <h3>Class: RecurrentModel</h3>
-            <p>The <code>RecurrentModel</code> class is a recurrent model that uses a GRU (Gated Recurrent Unit) to
-                process data sequences.</p>
-            <pre><code>
-    import torch
-    import torch.nn as nn
-    import torch.nn.functional as F
-    
-    class RecurrentModel(nn.Module):
-        def __init__(self, input_size, hidden_size, device='cpu'):
-            super(RecurrentModel, self).__init__()
-            self.device = device
-            self.hidden_size = hidden_size
-            self.gru = nn.GRU(input_size, hidden_size, batch_first=True)
-    
-        def forward(self, x):
-            h0 = torch.zeros(1, x.size(0), self.hidden_size).to(x.device)
-            out, _ = self.gru(x, h0)
-            return F.relu(out[:, -1, :])
-        </code></pre>
-            <h4>Method: __init__</h4>
-            <p>This constructor initializes the <code>RecurrentModel</code> with the given input size, hidden size, and
-                device.</p>
-            <p><strong>Description:</strong>
-                The <code>__init__</code> method sets up the GRU layer, which will process the sequential data. It also
-                defines the device (CPU or GPU) on which the model will run and the size of the hidden state for the
-                GRU.
-            </p>
-
-            <h4>Method: forward</h4>
-            <p>This method defines the forward pass of the model, processing the input data through the GRU and applying
-                a ReLU activation function.</p>
-            <p><strong>Description:</strong>
-                The <code>forward</code> method initializes the hidden state <code>h0</code>, processes the input
-                sequence through the GRU, and applies a ReLU activation to the output of the last time step. This
-                processed output is used for further analysis or classification.
-            </p>
-
-            <h3>Class: MulticlassPrototypicalClassifier</h3>
-            <p>The <code>MulticlassPrototypicalClassifier</code> class is a classifier that uses prototypes for
-                multiclass classification.</p>
-            <pre><code>
-    class MulticlassPrototypicalClassifier(nn.Module):
-        def __init__(self, device='cpu'):
-            super(MulticlassPrototypicalClassifier, self).__init__()
-            self.device = device
-    
-        def get_oh_labels(self, decimal_labels, n_way):
-            labels_onehot = torch.zeros([decimal_labels.size()[0], n_way], device=self.device)
-            labels_onehot = labels_onehot.scatter(1, decimal_labels, 1)
-            return labels_onehot
-    
-        def get_centroids(self, hidden_vectors, onehot_labels):
-            cluster_agg = onehot_labels.T @ hidden_vectors
-            samples_per_cluster = onehot_labels.sum(0)
-            centroids = torch.zeros_like(cluster_agg, device=self.device)
-            missing_clusters = samples_per_cluster == 0
-            existent_centroids = cluster_agg[~missing_clusters] / samples_per_cluster[~missing_clusters].unsqueeze(-1)
-            centroids[~missing_clusters] = existent_centroids
-            return centroids, missing_clusters
-    
-        def forward(self, hidden_vectors, labels, known_attacks_count, query_mask):
-            oh_labels = self.get_oh_labels(decimal_labels=labels.long(), n_way=known_attacks_count)
-            centroids, _ = self.get_centroids(hidden_vectors[~query_mask], oh_labels[~query_mask])
-            scores = 1 / (torch.cdist(hidden_vectors[query_mask], centroids) + 1e-10)
-            return scores
-        </code></pre>
-
-            <h4>Method: __init__</h4>
-            <p>This constructor initializes the classifier with the specified device.</p>
-            <p><strong>Description:</strong>
-                The <code>__init__</code> method sets up the <code>MulticlassPrototypicalClassifier</code> to run on the
-                specified device (either CPU or GPU), preparing it to handle multi-class classification tasks.
-            </p>
-
-            <h4>Method: get_oh_labels</h4>
-            <p>This method generates one-hot encoded labels from decimal labels.</p>
-            <p><strong>Description:</strong>
-                The <code>get_oh_labels</code> method converts decimal labels into one-hot encoded vectors. This is
-                essential for computing the centroids of different classes, as it allows for easy aggregation of hidden
-                vectors corresponding to each class.
-            </p>
-
-            <h4>Method: get_centroids</h4>
-            <p>This method computes the centroids of clusters based on hidden vectors and one-hot labels.</p>
-            <p><strong>Description:</strong>
-                The <code>get_centroids</code> method calculates the centroids of the clusters in the latent space by
-                averaging the hidden vectors of data points belonging to each class. If a class has no data points, the
-                centroid is marked as missing.
-            </p>
-
-            <h4>Method: forward</h4>
-            <p>This method defines the forward pass of the model, calculating scores based on centroids and distances.
-            </p>
-            <p><strong>Description:</strong>
-                The <code>forward</code> method performs the main classification task. It calculates the one-hot labels,
-                computes the centroids of the known classes, and then determines the distance between the hidden vectors
-                of the query data points and the class centroids. The scores represent the inverse of these distances,
-                used for classification.
-            </p>
-
-            <h3>Class: MultiClassFlowClassifier</h3>
-            <p>The <code>MultiClassFlowClassifier</code> class is a classifier that uses multiclass data flows.</p>
-            <pre><code>
-    class MultiClassFlowClassifier(nn.Module):
-        def __init__(self, input_size, hidden_size, dropout_prob=0.2, kr_heads=8, device='cpu'):
-            super(MultiClassFlowClassifier, self).__init__()
-            self.device = device
-            self.normalizer = nn.BatchNorm1d(input_size)
-            self.rnn = RecurrentModel(input_size, hidden_size, device=self.device)
-            self.kernel_regressor = HighDimKernelRegressor(in_features=hidden_size, out_features=hidden_size, n_heads=kr_heads, dropout=dropout_prob, device=self.device)
-            self.classifier = MulticlassPrototypicalClassifier(device=self.device)
-    
-        def forward(self, x, labels, curr_known_attack_count, query_mask):
-            x = self.normalizer(x.permute((0,2,1))).permute((0,2,1))
-            hiddens = self.rnn(x)
-            hiddens, predicted_kernel = self.kernel_regressor(hiddens)
-            logits = self.classifier(hiddens, labels, curr_known_attack_count, query_mask)
-            return logits, hiddens, predicted_kernel
-        </code></pre>
-
-            <h4>Method: __init__</h4>
-            <p>This constructor initializes the classifier with input size, hidden state size, dropout probability, and
-                the number of heads for the kernel regressor.</p>
-            <p><strong>Description:</strong>
-                The <code>__init__</code> method configures the <code>MultiClassFlowClassifier</code> with parameters
-                like input size, hidden size, dropout probability, and the number of attention heads in the kernel
-                regressor. It combines several components, including a normalizer, an RNN, and a kernel regressor, to
-                form a comprehensive classification model.
-            </p>
-
-            <h4>Method: forward</h4>
-            <p>This method defines the forward pass of the model, normalizing the input, passing through the RNN model
-                and kernel regressor, and finally classifying using the prototypical classifier.</p>
-            <p><strong>Description:</strong>
-                The <code>forward</code> method takes the input data, normalizes it, processes it through the RNN, and
-                then applies the kernel regressor to compute similarity kernels. The resulting hidden states and kernels
-                are then classified using the prototypical classifier to produce logits, which are used for
-                decision-making.
-            </p>
-
-            <h3>Class: TwoStreamMulticlassFlowClassifier</h3>
-            <p>The <code>TwoStreamMulticlassFlowClassifier</code> class is a classifier that uses two streams of
-                multiclass data.</p>
-            <pre><code>
-    class TwoStreamMulticlassFlowClassifier(nn.Module):
-        def __init__(self, flow_input_size, second_stream_input_size, hidden_size, dropout_prob=0.2, kr_heads=8, device='cpu'):
-            super(TwoStreamMulticlassFlowClassifier, self).__init__()
-            self.device = device
-            self.flow_normalizer = nn.BatchNorm1d(flow_input_size)
-            self.flow_rnn = RecurrentModel(flow_input_size, hidden_size, device=self.device)
-            self.second_stream_normalizer = nn.BatchNorm1d(second_stream_input_size)
-            self.second_stream_rnn = RecurrentModel(second_stream_input_size, hidden_size, device=self.device)
-            self.kernel_regressor = HighDimKernelRegressor(in_features=hidden_size*2, out_features=hidden_size, n_heads=kr_heads, dropout=dropout_prob, device=self.device)
-            self.classifier = MulticlassPrototypicalClassifier(device=self.device)
-    
-        def forward(self, flows, second_domain_feats, labels, curr_known_attack_count, query_mask):
-            flows = self.flow_normalizer(flows.permute((0,2,1))).permute((0,2,1))
-            second_domain_feats = self.second_stream_normalizer(second_domain_feats.permute((0,2,1))).permute((0,2,1))
-    
-            flows = self.flow_rnn(flows)
-            second_domain_feats = self.second_stream_rnn(second_domain_feats)
-    
-            hiddens = torch.cat([flows, second_domain_feats], dim=1)
-    
-            hiddens, predicted_kernel = self.kernel_regressor(hiddens)
-            logits = self.classifier(hiddens, labels, curr_known_attack_count, query_mask)
-    
-            return logits, hiddens, predicted_kernel
-        </code></pre>
-
-            <h4>Method: __init__</h4>
-            <p>This constructor initializes the classifier with two input streams, hidden state size, dropout
-                probability, and number of heads for the kernel regressor.</p>
-            <p><strong>Description:</strong>
-                The <code>__init__</code> method configures the <code>TwoStreamMulticlassFlowClassifier</code> to handle
-                two distinct input data streams, initializing normalization layers and RNNs for both streams. It also
-                sets up a kernel regressor to combine the outputs from both streams before classification.
-            </p>
-
-            <h4>Method: forward</h4>
-            <p>This method defines the forward pass of the model, normalizing the input streams, passing through the RNN
-                models, and finally classifying using the prototypical classifier.</p>
-            <p><strong>Description:</strong>
-                The <code>forward</code> method processes two separate data streams through their respective
-                normalization layers and RNNs, concatenates the outputs, and then applies the kernel regressor. The
-                combined data is classified using the prototypical classifier, providing logits for decision-making.
-            </p>
-
-            <h3>Class: ThreeStreamMulticlassFlowClassifier</h3>
-            <p>The <code>ThreeStreamMulticlassFlowClassifier</code> class is a classifier that uses three streams of
-                multiclass data.</p>
-            <pre><code>
-    class ThreeStreamMulticlassFlowClassifier(nn.Module):
-        def __init__(self, flow_input_size, second_stream_input_size, third_stream_input_size, hidden_size, dropout_prob=0.2, kr_heads=8, device='cpu'):
-            super(ThreeStreamMulticlassFlowClassifier, self).__init__()
-            self.device = device
-            self.flow_normalizer = nn.BatchNorm1d(flow_input_size)
-            self.flow_rnn = RecurrentModel(flow_input_size, hidden_size, device=self.device)
-            self.second_stream_normalizer = nn.BatchNorm1d(second_stream_input_size)
-            self.second_stream_rnn = RecurrentModel(second_stream_input_size, hidden_size, device=self.device)
-            self.third_stream_normalizer = nn.BatchNorm1d(third_stream_input_size)
-            self.third_stream_rnn = RecurrentModel(third_stream_input_size, hidden_size, device=self.device)
-            self.kernel_regressor = HighDimKernelRegressor(in_features=hidden_size*3, out_features=hidden_size, n_heads=kr_heads, dropout=dropout_prob, device=self.device)
-            self.classifier = MulticlassPrototypicalClassifier(device=self.device)
-    
-        def forward(self, flows, second_domain_feats, third_domain_feats, labels, curr_known_attack_count, query_mask):
-            flows = self.flow_normalizer(flows.permute((0,2,1))).permute((0,2,1))
-            second_domain_feats = self.second_stream_normalizer(second_domain_feats.permute((0,2,1))).permute((0,2,1))
-            third_domain_feats = self.third_stream_normalizer(third_domain_feats.permute((0,2,1))).permute((0,2,1))
-    
-            flows = self.flow_rnn(flows)
-            second_domain_feats = self.second_stream_rnn(second_domain_feats)
-            third_domain_feats = self.third_stream_rnn(third_domain_feats)
-    
-            hiddens = torch.cat([flows, second_domain_feats, third_domain_feats], dim=1)
-    
-            hiddens, predicted_kernel = self.kernel_regressor(hiddens)
-            logits = self.classifier(hiddens, labels, curr_known_attack_count, query_mask)
-    
-            return logits, hiddens, predicted_kernel
-        </code></pre>
-
-            <h4>Method: __init__</h4>
-            <p>This constructor initializes the classifier with three input streams, hidden state size, dropout
-                probability, and number of heads for the kernel regressor.</p>
-            <p><strong>Description:</strong>
-                The <code>__init__</code> method sets up the <code>ThreeStreamMulticlassFlowClassifier</code> to handle
-                three different data streams. It initializes necessary normalization layers, RNNs, and a kernel
-                regressor to process and combine the information from these streams for classification.
-            </p>
-
-            <h4>Method: forward</h4>
-            <p>This method defines the forward pass of the model, normalizing the input streams, passing through the RNN
-                models, and finally classifying using the prototypical classifier.</p>
-            <p><strong>Description:</strong>
-                The <code>forward</code> method processes three data streams through their respective RNNs and
-                normalizers, concatenates the resulting hidden states, and applies a kernel regressor. The combined
-                hidden states are then classified using the prototypical classifier, producing logits for
-                decision-making.
-            </p>
-
-            <h3>Class: ConfidenceDecoder</h3>
-            <p>The <code>ConfidenceDecoder</code> class is a confidence decoder that transforms confidence scores into
-                unknown indicators.</p>
-            <pre><code>
-    class ConfidenceDecoder(nn.Module):
-        def __init__(self, device):
-            super(ConfidenceDecoder, self).__init__()
-            self.device = device
-    
-        def forward(self, scores):
-            scores = (1 - scores.unsqueeze(-1)).min(1)[0]
-            unknown_indicators = torch.sigmoid(scores)
-            return unknown_indicators
-        </code></pre>
-
-            <h4>Method: __init__</h4>
-            <p>This constructor initializes the decoder with the specified device.</p>
-            <p><strong>Description:</strong>
-                The <code>__init__</code> method prepares the <code>ConfidenceDecoder</code> to run on the specified
-                device (CPU or GPU), setting up the model for subsequent transformations of confidence scores into
-                unknown indicators.
-            </p>
-
-            <h4>Method: forward</h4>
-            <p>This method transforms confidence scores into unknown indicators using a sigmoid function.</p>
-            <p><strong>Description:</strong>
-                The <code>forward</code> method takes a set of confidence scores, adjusts them by calculating the
-                minimum inverted score, and then applies a sigmoid function to produce an indicator for unknown
-                classifications.
-            </p>
-
-            <h3>Class: KernelRegressionLoss</h3>
-            <p>The <code>KernelRegressionLoss</code> class computes the loss for kernel regression.</p>
-            <pre><code>
-    class KernelRegressionLoss(nn.Module):
-        def __init__(self, repulsive_weigth=1, attractive_weigth=1, device='cpu'):
-            super(KernelRegressionLoss, self).__init__()
-            self.r_w = repulsive_weigth
-            self.a_w = attractive_weigth
-            self.device = device
-    
-        def forward(self, baseline_kernel, predicted_kernel):
-            repulsive_CE_term = -(1 - baseline_kernel) * torch.log(1-predicted_kernel + 1e-10)
-            repulsive_CE_term = repulsive_CE_term.sum(dim=1)
-            repulsive_CE_term = repulsive_CE_term.mean()
-    
-            attractive_CE_term = -(baseline_kernel * torch.log(predicted_kernel + 1e-10))
-            attractive_CE_term = attractive_CE_term.sum(dim=1)
-            attractive_CE_term = attractive_CE_term.mean()
-    
-            return (self.r_w * repulsive_CE_term) + (self.a_w * attractive_CE_term)
-        </code></pre>
-
-            <h4>Method: __init__</h4>
-            <p>This constructor initializes the loss calculator with specified repulsive and attractive weights and
-                device.</p>
-            <p><strong>Description:</strong>
-                The <code>__init__</code> method sets up the <code>KernelRegressionLoss</code> with weights that control
-                the balance between repulsive and attractive forces in the loss function. It also initializes the device
-                on which the calculations will be performed.
-            </p>
-
-            <h4>Method: forward</h4>
-            <p>This method computes the loss for kernel regression by combining repulsive and attractive forces.</p>
-            <p><strong>Description:</strong>
-                The <code>forward</code> method calculates the cross-entropy loss for both repulsive and attractive
-                terms between baseline and predicted kernels. It then combines these terms using the specified weights
-                to produce the overall loss value, which is used for optimizing the model during training.
-            </p>
-
-            <h3>Class: SimilarityNet</h3>
-            <p>The <code>SimilarityNet</code> class computes the similarity between two vectors.</p>
-            <pre><code>
-    class SimmilarityNet(nn.Module):
-        def __init__(self, h_dim):
-            super(SimmilarityNet, self).__init__()
-            self.act = nn.LeakyReLU(0.2)
-            self.fc1 = nn.Linear(h_dim, h_dim // 2)
-            self.fc2 = nn.Linear(h_dim // 2, 1)
-    
-        def forward(self, x1, x2):
-            input_to_symm = torch.abs(x1 - x2)
-            symm = self.fc1(input_to_symm)
-            symm = self.act(symm)
-            symm = self.fc2(symm)
-            return symm
-        </code></pre>
-
-            <h4>Method: __init__</h4>
-            <p>This constructor initializes the similarity network with the dimension of the input vectors.</p>
-            <p><strong>Description:</strong>
-                The <code>__init__</code> method sets up the <code>SimilarityNet</code> to compute similarities between
-                vectors of a specified dimension. It initializes the layers and activation function required for this
-                task.
-            </p>
-
-            <h4>Method: forward</h4>
-            <p>This method computes the similarity between two vectors using a two-layer neural network with LeakyReLU
-                activation.</p>
-            <p><strong>Description:</strong>
-                The <code>forward</code> method calculates the similarity between two input vectors by computing their
-                absolute difference, passing it through a fully connected layer, applying a LeakyReLU activation, and
-                then generating a similarity score through another fully connected layer.
-            </p>
-
-            <h3>Class: HighDimKernelRegressor</h3>
-            <p>The <code>HighDimKernelRegressor</code> class is a high-dimensional kernel regressor that uses a
-                similarity network.</p>
-            <pre><code>
-    class HighDimKernelRegressor(nn.Module):
-        def __init__(self, in_features, out_features, n_heads, is_concat=False, dropout=0.0, leaky_relu_negative_slope=0.2, share_weights=True, device='cpu'):
-            super(HighDimKernelRegressor, self).__init__()
-            self.device = device
-            self.w = nn.Parameter(torch.tensor(1.0))
-            self.b = nn.Parameter(torch.tensor(-0.5))
-            self.similarity_network = SimmilarityNet(h_dim=in_features)
-    
-        def forward(self, hiddens):
-            n_nodes = hiddens.shape[0]
-            h_pivot = hiddens.repeat(n_nodes, 1)
-            h_interleave = hiddens.repeat_interleave(n_nodes, dim=0)
-            energies = self.similarity_network(h_pivot, h_interleave)
-            kernel = torch.sigmoid(energies)
-            kernel = kernel.reshape(n_nodes, n_nodes)
-            return hiddens, kernel
-        </code></pre>
-
-            <h4>Method: __init__</h4>
-            <p>This constructor initializes the regressor with the specified parameters and a similarity network.</p>
-            <p><strong>Description:</strong>
-                The <code>__init__</code> method sets up the <code>HighDimKernelRegressor</code> to handle
-                high-dimensional data by initializing a similarity network and configuring parameters like the number of
-                features, attention heads, and dropout rate.
-            </p>
-
-            <h4>Method: forward</h4>
-            <p>This method defines the forward pass of the kernel regressor, computing kernels and similarity energies
-                between hidden vectors.</p>
-            <p><strong>Description:</strong>
-                The <code>forward</code> method calculates pairwise similarity scores between all pairs of hidden
-                vectors by passing them through the similarity network. It then applies a sigmoid function to these
-                scores to produce a kernel matrix, representing the relationships between the data points.
-            </p>
-
-            <h3>Class: SimpleKernelRegressor</h3>
-            <p>The <code>SimpleKernelRegressor</code> class is a simple kernel regressor that computes distance-based
-                kernels.</p>
-            <pre><code>
-    class SimpleKernelRegressor(nn.Module):
-        def __init__(self, in_features, out_features, n_heads, is_concat=False, dropout=0.0, leaky_relu_negative_slope=0.2, share_weights=True, device='cpu'):
-            super(SimpleKernelRegressor, self).__init__()
-            self.device = device
-            self.w = nn.Parameter(torch.tensor(1.0))
-            self.b = nn.Parameter(torch.tensor(-0.5))
-    
-        def forward(self, hiddens):
-            n_nodes = hiddens.shape[0]
-            energies = 1 / (torch.cdist(hiddens, hiddens) + 1e-10)
-            kernel = torch.sigmoid(energies)
-            kernel = kernel.reshape(n_nodes, n_nodes)
-            return hiddens, kernel
-        </code></pre>
-
-            <h4>Method: __init__</h4>
-            <p>This constructor initializes the simple regressor with the specified parameters.</p>
-            <p><strong>Description:</strong>
-                The <code>__init__</code> method configures the <code>SimpleKernelRegressor</code> with basic parameters
-                to compute kernels based on the pairwise distances between hidden vectors. It sets up the weights and
-                biases needed for this task.
-            </p>
-
-            <h4>Method: forward</h4>
-            <p>This method defines the forward pass of the kernel regressor, computing distance-based kernels between
-                hidden vectors.</p>
-            <p><strong>Description:</strong>
-                The <code>forward</code> method computes the reciprocal of the pairwise distances between hidden vectors
-                to create a kernel matrix, which is then passed through a sigmoid function to produce the final kernel
-                values used for downstream tasks.
-            </p>
-
-            <h3>Class: KernelRegressor</h3>
-            <p>The <code>KernelRegressor</code> class is a kernel regressor that uses a graph attention layer (Graph
-                Attention Layer).</p>
-            <pre><code>
-    class KernelRegressor(nn.Module):
-        def __init__(self, in_features, out_features, n_heads, is_concat=False, dropout=0.0, leaky_relu_negative_slope=0.2, share_weights=True, device='cpu'):
-            super(KernelRegressor, self).__init__()
-            self.regressor = GraphAttentionV2Layer(in_features=in_features, out_features=out_features, n_heads=n_heads, is_concat=is_concat, dropout=dropout, leaky_relu_negative_slope=leaky_relu_negative_slope, share_weights=share_weights)
-            self.device = device
-    
-        def forward(self, hiddens):
-            return self.regressor(hiddens)
-        </code></pre>
-
-            <h4>Method: __init__</h4>
-            <p>This constructor initializes the kernel regressor with a graph attention layer.</p>
-            <p><strong>Description:</strong>
-                The <code>__init__</code> method configures the <code>KernelRegressor</code> with a graph attention
-                layer, setting up the necessary parameters for the attention mechanism to operate effectively on the
-                hidden vectors.
-            </p>
-
-            <h4>Method: forward</h4>
-            <p>This method defines the forward pass of the kernel regressor, using a graph attention layer to compute
-                kernels.</p>
-            <p><strong>Description:</strong>
-                The <code>forward</code> method applies a graph attention mechanism to the hidden vectors, computing the
-                attention scores that determine how much each node in the graph influences others. The output is a set
-                of hidden states and attention scores that can be used for further analysis or classification.
-            </p>
-
-            <h3>Class: GraphAttentionV2Layer</h3>
-            <p>The <code>GraphAttentionV2Layer</code> class is a graph attention layer that computes hidden vectors and
-                kernels for graphs.</p>
-            <pre><code>
-    class GraphAttentionV2Layer(nn.Module):
-        def __init__(self, in_features, out_features, n_heads, is_concat=False, dropout=0.1, leaky_relu_negative_slope=0.2, share_weights=True):
-            super().__init__()
-            self.is_concat = is_concat
-            self.n_heads = n_heads
-            self.share_weights = share_weights
-    
-            if is_concat:
-                assert out_features % n_heads == 0
-                self.n_hidden = out_features // n_heads
-            else:
-                self.n_hidden = out_features
-    
-            self.linear_l = nn.Linear(in_features, self.n_hidden * n_heads, bias=False)
-            if share_weights:
-                self.linear_r = self.linear_l
-            else:
-                self.linear_r = nn.Linear(in_features, self.n_hidden * n_heads, bias=False)
-    
-            self.attn = nn.Linear(self.n_hidden, 1, bias=False)
-            self.activation = nn.LeakyReLU(negative_slope=leaky_relu_negative_slope)
-            self.softmax = nn.Softmax(dim=1)
-            self.dropout = nn.Dropout(dropout)
-    
-        def forward(self, h):
-            n_nodes = h.shape[0]
-            g_l = self.linear_l(h).view(n_nodes, self.n_heads, self.n_hidden)
-            g_r = self.linear_r(h).view(n_nodes, self.n_heads, self.n_hidden)
-    
-            g_l_repeat = g_l.repeat(n_nodes, 1, 1)
-            g_r_repeat_interleave = g_r.repeat_interleave(n_nodes, dim=0)
-            g_sum = g_l_repeat + g_r_repeat_interleave
-            g_sum = g_sum.view(n_nodes, n_nodes, self.n_heads, self.n_hidden)
-    
-            e = self.attn(self.activation(g_sum))
-            e = e.squeeze(-1)
-            a = self.softmax(e)
-            a = self.dropout(a)
-    
-            hiddens = torch.einsum('ijh,jhf->ihf', a, g_r)
-    
-            if self.is_concat:
-                hiddens = hiddens.reshape(n_nodes, self.n_heads * self.n_hidden)
-            else:
-                hiddens = hiddens.mean(dim=1)
-    
-            a = a.mean(dim=2)
-            a = a / (a.max(dim=1)[0] + 1e-10)
-            a = a.clamp(min=0, max=1)
-    
-            return hiddens, a
-        </code></pre>
-
-            <h4>Method: __init__</h4>
-            <p>This constructor initializes the graph attention layer with the specified parameters.</p>
-            <p><strong>Description:</strong>
-                The <code>__init__</code> method sets up the <code>GraphAttentionV2Layer</code> with parameters that
-                control how the attention mechanism is applied, including the number of attention heads, whether to
-                concatenate the results, and the dropout rate for regularization.
-            </p>
-
-            <h4>Method: forward</h4>
-            <p>This method defines the forward pass of the graph attention layer, computing hidden vectors and kernels
-                for graphs.</p>
-            <p><strong>Description:</strong>
-                The <code>forward</code> method computes attention scores between nodes in a graph, applies these scores
-                to the hidden states, and produces a set of aggregated hidden vectors and normalized attention scores.
-                These outputs are crucial for tasks that involve understanding relationships in graph-structured data.
-            </p>
-        </div>
+                <h3>Class: RecurrentModel</h3>
+                <p>The <code>RecurrentModel</code> class defines a recurrent neural network using GRU (Gated Recurrent Unit) layers to process sequential data, such as network traffic flows.</p>
+                <pre><code>
+                class RecurrentModel(nn.Module):
+                    def __init__(self, input_size, hidden_size, device='cpu'):
+                        super(RecurrentModel, self).__init__()
+                        self.device = device
+                        self.hidden_size = hidden_size
+                        self.gru = nn.GRU(input_size, hidden_size, batch_first=True)
+            
+                    def forward(self, x):
+                        h0 = torch.zeros(1, x.size(0), self.hidden_size).to(x.device)
+                        out, _ = self.gru(x, h0)
+                        return F.relu(out[:, -1, :])
+                </code></pre>
+                <h4>Method: RecurrentModel</h4>
+                <p><strong>Description:</strong> This class defines a GRU-based model that processes sequences of inputs (such as network flow data) and returns the final hidden state after passing through the GRU layers.</p>
+            
+                <h3>Class: MulticlassPrototypicalClassifier</h3>
+                <p>The <code>MulticlassPrototypicalClassifier</code> class performs classification using a prototypical network. It computes class centroids from hidden vectors and uses them to classify new inputs.</p>
+                <pre><code>
+                class MulticlassPrototypicalClassifier(nn.Module):
+                    def __init__(self, device='cpu'):
+                        super(MulticlassPrototypicalClassifier, self).__init__()
+                        self.device = device
+            
+                    def get_oh_labels(self, decimal_labels, n_way):
+                        labels_onehot = torch.zeros([decimal_labels.size()[0], n_way], device=self.device)
+                        labels_onehot = labels_onehot.scatter(1, decimal_labels, 1)
+                        return labels_onehot
+            
+                    def get_centroids(self, hidden_vectors, onehot_labels):
+                        cluster_agg = onehot_labels.T @ hidden_vectors
+                        samples_per_cluster = onehot_labels.sum(0)
+                        centroids = torch.zeros_like(cluster_agg, device=self.device)
+                        missing_clusters = samples_per_cluster == 0
+                        existent_centroids = cluster_agg[~missing_clusters] / samples_per_cluster[~missing_clusters].unsqueeze(-1)
+                        centroids[~missing_clusters] = existent_centroids
+                        return centroids, missing_clusters
+            
+                    def forward(self, hidden_vectors, labels, known_attacks_count, query_mask):
+                        oh_labels = self.get_oh_labels(decimal_labels=labels.long(), n_way=known_attacks_count)
+                        centroids, _ = self.get_centroids(hidden_vectors[~query_mask], oh_labels[~query_mask])
+                        scores = 1 / (torch.cdist(hidden_vectors[query_mask], centroids) + 1e-10)
+                        return scores
+                </code></pre>
+                <h4>Method: MulticlassPrototypicalClassifier</h4>
+                <p><strong>Description:</strong> This class computes centroids for each class based on the hidden representations of the inputs. It uses these centroids to classify new inputs by calculating the distance between them and the class centroids.</p>
+            
+                <h3>Class: MultiClassFlowClassifier</h3>
+                <p>The <code>MultiClassFlowClassifier</code> class implements a flow-based classifier that uses a recurrent model and kernel regression to classify network attacks.</p>
+                <pre><code>
+                class MultiClassFlowClassifier(nn.Module):
+                    def __init__(self, input_size, hidden_size, dropout_prob=0.2, kr_heads=8, device='cpu'):
+                        super(MultiClassFlowClassifier, self).__init__()
+                        self.device = device
+                        self.normalizer = nn.BatchNorm1d(input_size)
+                        self.rnn = RecurrentModel(input_size, hidden_size, device=self.device)
+                        self.kernel_regressor = HighDimKernelRegressor(in_features=hidden_size, out_features=hidden_size, n_heads=kr_heads, dropout=dropout_prob, device=self.device)
+                        self.classifier = MulticlassPrototypicalClassifier(device=self.device)
+            
+                    def forward(self, x, labels, curr_known_attack_count, query_mask):
+                        x = self.normalizer(x.permute((0, 2, 1))).permute((0, 2, 1))
+                        hiddens = self.rnn(x)
+                        hiddens, predicted_kernel = self.kernel_regressor(hiddens)
+                        logits = self.classifier(hiddens, labels, curr_known_attack_count, query_mask)
+                        return logits, hiddens, predicted_kernel
+                </code></pre>
+                <h4>Method: MultiClassFlowClassifier</h4>
+                <p><strong>Description:</strong> This class normalizes the input features, applies a recurrent model to extract hidden states, and uses kernel regression to further process the hidden states before performing classification with a prototypical classifier.</p>
+            
+                <h3>Class: TwoStreamMulticlassFlowClassifier</h3>
+                <p>The <code>TwoStreamMulticlassFlowClassifier</code> class processes two streams of input data (e.g., network flow and packet features) to classify attacks. It applies recurrent models to each stream separately and concatenates their hidden states for classification.</p>
+                <pre><code>
+                class TwoStreamMulticlassFlowClassifier(nn.Module):
+                    def __init__(self, flow_input_size, second_stream_input_size, hidden_size, dropout_prob=0.2, kr_heads=8, device='cpu'):
+                        super(TwoStreamMulticlassFlowClassifier, self).__init__()
+                        self.device = device
+                        self.flow_normalizer = nn.BatchNorm1d(flow_input_size)
+                        self.flow_rnn = RecurrentModel(flow_input_size, hidden_size, device=self.device)
+                        self.second_stream_normalizer = nn.BatchNorm1d(second_stream_input_size)
+                        self.second_stream_rnn = RecurrentModel(second_stream_input_size, hidden_size, device=self.device)
+                        self.kernel_regressor = HighDimKernelRegressor(in_features=hidden_size * 2, out_features=hidden_size, n_heads=kr_heads, dropout=dropout_prob, device=self.device)
+                        self.classifier = MulticlassPrototypicalClassifier(device=self.device)
+            
+                    def forward(self, flows, second_domain_feats, labels, curr_known_attack_count, query_mask):
+                        flows = self.flow_normalizer(flows.permute((0, 2, 1))).permute((0, 2, 1))
+                        second_domain_feats = self.second_stream_normalizer(second_domain_feats.permute((0, 2, 1))).permute((0, 2, 1))
+                        flows = self.flow_rnn(flows)
+                        second_domain_feats = self.second_stream_rnn(second_domain_feats)
+                        hiddens = torch.cat([flows, second_domain_feats], dim=1)
+                        hiddens, predicted_kernel = self.kernel_regressor(hiddens)
+                        logits = self.classifier(hiddens, labels, curr_known_attack_count, query_mask)
+                        return logits, hiddens, predicted_kernel
+                </code></pre>
+                <h4>Method: TwoStreamMulticlassFlowClassifier</h4>
+                <p><strong>Description:</strong> This model processes two separate streams of features (e.g., network flow features and packet features) using recurrent layers, concatenates the resulting hidden states, and applies kernel regression and classification.</p>
+            
+                <h3>Class: ThreeStreamMulticlassFlowClassifier</h3>
+                <p>The <code>ThreeStreamMulticlassFlowClassifier</code> class extends the two-stream classifier by adding a third stream of input features.</p>
+                <pre><code>
+                class ThreeStreamMulticlassFlowClassifier(nn.Module):
+                    def __init__(self, flow_input_size, second_stream_input_size, third_stream_input_size, hidden_size, dropout_prob=0.2, kr_heads=8, device='cpu'):
+                        super(ThreeStreamMulticlassFlowClassifier, self).__init__()
+                        self.device = device
+                        self.flow_normalizer = nn.BatchNorm1d(flow_input_size)
+                        self.flow_rnn = RecurrentModel(flow_input_size, hidden_size, device=self.device)
+                        self.second_stream_normalizer = nn.BatchNorm1d(second_stream_input_size)
+                        self.second_stream_rnn = RecurrentModel(second_stream_input_size, hidden_size, device=self.device)
+                        self.third_stream_normalizer = nn.BatchNorm1d(third_stream_input_size)
+                        self.third_stream_rnn = RecurrentModel(third_stream_input_size, hidden_size, device=self.device)
+                        self.kernel_regressor = HighDimKernelRegressor(in_features=hidden_size * 3, out_features=hidden_size, n_heads=kr_heads, dropout=dropout_prob, device=self.device)
+                        self.classifier = MulticlassPrototypicalClassifier(device=self.device)
+            
+                    def forward(self, flows, second_domain_feats, third_domain_feats, labels, curr_known_attack_count, query_mask):
+                        flows = self.flow_normalizer(flows.permute(0, 2, 1)).permute(0, 2, 1)
+                        second_domain_feats = self.second_stream_normalizer(second_domain_feats.permute(0, 2, 1)).permute(0, 2, 1)
+                        third_domain_feats = self.third_stream_normalizer(third_domain_feats.permute(0, 2, 1)).permute(0, 2, 1)
+                        flows = self.flow_rnn(flows)
+                        second_domain_feats = self.second_stream_rnn(second_domain_feats)
+                        third_domain_feats = self.third_stream_rnn(third_domain_feats)
+                        hiddens = torch.cat([flows, second_domain_feats, third_domain_feats], dim=1)
+                        hiddens, predicted_kernel = self.kernel_regressor(hiddens)
+                        logits = self.classifier(hiddens, labels, curr_known_attack_count, query_mask)
+                        return logits, hiddens, predicted_kernel
+                </code></pre>
+                <h4>Method: ThreeStreamMulticlassFlowClassifier</h4>
+                <p><strong>Description:</strong> This model processes three input streams using separate recurrent models for each stream, concatenates their hidden states, and applies kernel regression and classification.</p>
+            
+                <h3>Class: HighDimKernelRegressor</h3>
+                <p>The <code>HighDimKernelRegressor</code> class performs high-dimensional kernel regression by computing pairwise similarities between node embeddings and using them for kernel regression.</p>
+                <pre><code>
+                class HighDimKernelRegressor(nn.Module):
+                    def __init__(self, in_features, out_features, n_heads, dropout=0.0, device="cpu"):
+                        super(HighDimKernelRegressor, self).__init__()
+                        self.device = device
+                        self.similarity_network = SimmilarityNet(h_dim=in_features)
+            
+                    def forward(self, hiddens):
+                        n_nodes = hiddens.shape[0]
+                        h_pivot = hiddens.repeat(n_nodes, 1)
+                        h_interleave = hiddens.repeat_interleave(n_nodes, dim=0)
+                        energies = self.similarity_network(h_pivot, h_interleave)
+                        kernel = torch.sigmoid(energies)
+                        kernel = kernel.reshape(n_nodes, n_nodes)
+                        return hiddens, kernel
+                </code></pre>
+                <h4>Method: HighDimKernelRegressor</h4>
+                <p><strong>Description:</strong> This method computes the similarity between node embeddings using a similarity network and applies a sigmoid function to obtain the kernel matrix, which is used for high-dimensional regression tasks.</p>
+            
+                <h3>Class: ConfidenceDecoder</h3>
+                <p>The <code>ConfidenceDecoder</code> class decodes the confidence of predictions by computing unknown indicators based on the similarity scores.</p>
+                <pre><code>
+                class ConfidenceDecoder(nn.Module):
+                    def __init__(self, device):
+                        super(ConfidenceDecoder, self).__init__()
+                        self.device = device
+            
+                    def forward(self, scores):
+                        scores = (1 - scores.unsqueeze(-1)).min(1)[0]
+                        unknown_indicators = torch.sigmoid(scores)
+                        return unknown_indicators
+                </code></pre>
+                <h4>Method: ConfidenceDecoder</h4>
+                <p><strong>Description:</strong> This method computes the confidence of predictions by evaluating the similarity scores and applying a sigmoid function to generate the final confidence values.</p>
+            
+                <h3>Class: KernelRegressionLoss</h3>
+                <p>The <code>KernelRegressionLoss</code> class implements a custom loss function for kernel regression tasks, balancing attractive and repulsive forces in the embedding space.</p>
+                <pre><code>
+                class KernelRegressionLoss(nn.Module):
+                    def __init__(self, repulsive_weigth=1, attractive_weigth=1, device="cpu"):
+                        super(KernelRegressionLoss, self).__init__()
+                        self.r_w = repulsive_weigth
+                        self.a_w = attractive_weigth
+                        self.device = device
+            
+                    def forward(self, baseline_kernel, predicted_kernel):
+                        repulsive_CE_term = -(1 - baseline_kernel) * torch.log(1 - predicted_kernel + 1e-10)
+                        repulsive_CE_term = repulsive_CE_term.sum(dim=1).mean()
+                        attractive_CE_term = -(baseline_kernel * torch.log(predicted_kernel + 1e-10))
+                        attractive_CE_term = attractive_CE_term.sum(dim=1).mean()
+                        return (self.r_w * repulsive_CE_term) + (self.a_w * attractive_CE_term)
+                </code></pre>
+                <h4>Method: KernelRegressionLoss</h4>
+                <p><strong>Description:</strong> This custom loss function applies both attractive and repulsive forces to adjust the embedding space during kernel regression. The loss encourages similar samples to cluster together while pushing dissimilar samples apart.</p>
+            
+                <h3>Class: GraphAttentionV2Layer</h3>
+                <p>The <code>GraphAttentionV2Layer</code> class implements a graph attention layer that computes attention scores between nodes in a graph and updates their embeddings accordingly.</p>
+                <pre><code>
+                class GraphAttentionV2Layer(nn.Module):
+                    def __init__(self, in_features, out_features, n_heads, is_concat=False, dropout=0.1, leaky_relu_negative_slope=0.2, share_weights=True):
+                        super(GraphAttentionV2Layer, self).__init__()
+                        self.is_concat = is_concat
+                        self.n_heads = n_heads
+                        self.linear_l = nn.Linear(in_features, out_features, bias=False)
+                        self.linear_r = self.linear_l if share_weights else nn.Linear(in_features, out_features, bias=False)
+                        self.attn = nn.Linear(out_features // n_heads if is_concat else out_features, 1, bias=False)
+                        self.activation = nn.LeakyReLU(negative_slope=leaky_relu_negative_slope)
+                        self.softmax = nn.Softmax(dim=1)
+                        self.dropout = nn.Dropout(dropout)
+            
+                    def forward(self, h):
+                        n_nodes = h.shape[0]
+                        g_l = self.linear_l(h).view(n_nodes, self.n_heads, -1)
+                        g_r = self.linear_r(h).view(n_nodes, self.n_heads, -1)
+                        g_sum = (g_l + g_r).view(n_nodes, n_nodes, self.n_heads, -1)
+                        e = self.attn(self.activation(g_sum)).squeeze(-1)
+                        a = self.softmax(e)
+                        a = self.dropout(a)
+                        hiddens = torch.einsum('ijh,jhf->ihf', a, g_r)
+                        return hiddens.mean(dim=1), a.mean(dim=2)
+                </code></pre>
+                <h4>Method: GraphAttentionV2Layer</h4>
+                <p><strong>Description:</strong> This layer applies graph attention mechanisms to compute relationships between nodes in a graph. The attention scores are computed for each node pair, and the hidden states of the nodes are updated based on the attention-weighted node features.</p>
+            </div>
         <div id="controller_brain" class="content">
             <h2>Controller Brain</h2>
             <p>This file defines the <code>ControllerBrain</code> class, which orchestrates the operations for training
@@ -1984,7 +1672,6 @@ def get_accuracy(self, logits_preds, decimal_labels, query_mask):
                 function logs that the port has been blocked.
             </p>
         </div>
-        
         <div id="curricula" class="content">
             <h2>Smartville Attack Classification Dictionaries</h2>
             <p>This section is part of the Smartville project, and it defines various dictionaries used to classify IP addresses associated with specific types of attacks. The dictionaries categorize IPs into known attack types, Zero-Day Attacks (ZdA), and assign them to training and testing groups.</p>
@@ -2603,7 +2290,7 @@ def get_accuracy(self, logits_preds, decimal_labels, query_mask):
             </code></pre>
             <p><strong>Description:</strong> The main block initializes the Grafana connection and the Prometheus data source configuration. It first attempts to delete any existing Prometheus data source with the same name and then adds the new data source based on the provided configuration.</p>
         </div>
-        
+          
         <div id="metrics_logger" class="content">
             <h2>Metrics Logger for Kafka and Grafana</h2>
             <p>This section is part of the Smartville project and describes the `MetricsLogger` class, which is responsible for logging and monitoring metrics from a Kafka server and displaying them in Grafana.</p>
