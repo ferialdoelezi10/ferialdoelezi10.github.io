@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smartville Documentation</title>
+    <!-- Collegamento al file CSS esterno -->
+    <link rel="stylesheet" href="style.css">
+    <script src="script.js" defer></script>
+</head>
+
+<body>
+
+    <div class="sidebar" id ="sidebar">
+        <a href="main_content/Intro.html">Introduction</a>
+        <a href="main_content/Installation.html" >Installation</a>
+        <a href="main_content/Usage.html" >Usage</a>
+        <a href="main_content/Background.html" >Background</a>
+        <a href="main_content/Docker.html" >Docker Containers</a>
+        <a href="main_content/platform.html">Grafana, Kafka,
+            Prometheus</a>
+        <a href="main_content/PN.html" >Prototypical Networks</a>
+        <a href="main_content/License.html" >License</a>
+        <a href="main_content/Citation.html" >Citation</a>
+        <a href="javascript:void(0) " onclick="toggleSubcategories('codeSubcategories')">Code</a>
+        <div id="codeSubcategories" style="display:none;">
+            <a href="pox_controller/pox_controller.html" style="padding-left:20px;">pox_controller</a>
+            <ul id="poxControllerSubcategories" style="display:none;">
+                <li><a href="javascript:void(0)" style="padding-left:40px;"
+                        onclick="showContent('neural_models', true)">Neural models</a></li>
+                <li><a href="javascript:void(0)" style="padding-left:40px;"
+                        onclick="showContent('controller_brain', true)">Controller brain</a></li>
+                <li><a href="javascript:void(0)" style="padding-left:40px;"
+                        onclick="showContent('graph_generator', true)">Graph generator</a></li>
+                <li><a href="javascript:void(0)" style="padding-left:40px;"
+                        onclick="showContent('consumer_thread', true)">Consumer Thread</a></li>
+                <li><a href="javascript:void(0)" style="padding-left:40px;"
+                        onclick="showContent('smart_controller', true)">Smart Controller</a></li>
+                <li><a href="javascript:void(0)" style="padding-left:40px;" onclick="showContent('ai', true)">Ai</a>
+                </li>
+
+            </ul>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="header">
+            <h1><a href="../index.html" style="text-decoration: none;">Smartville</h1></a>
+            <p>This is the official SmartVille repository</p>
+            <p>Smartville is an open-source testbed based on GNS3, Pytorch, and Docker for training and testing online
+                intrusion detection systems based on machine learning.</p>
+            <p>Feel free to contribute!</p>
+            <p>The related paper <em>"SmartVille: an open-source SDN online-intrusion detection testbed"</em> is under
+                review. Stay tuned!</p>
+        </div>
+
+</body>
+
+</html>
