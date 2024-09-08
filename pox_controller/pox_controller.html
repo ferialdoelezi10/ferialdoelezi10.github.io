@@ -30,7 +30,6 @@
             <li><a href="javascript:void(0)" style="padding-left:40px;" onclick="showContent('consumer_thread', true)">Consumer Thread</a></li>
             <li><a href="javascript:void(0)" style="padding-left:40px;" onclick="showContent('smart_controller', true)">Smart Controller</a></li>
             <li><a href="javascript:void(0)" style="padding-left:40px;" onclick="showContent('ai', true)">Ai</a></li>
-            <li><a href="javascript:void(0)" style="padding-left:40px;" onclick="showContent('consumer_thread', true)">Consumer thread</a></li>
             <li><a href="javascript:void(0)" style="padding-left:40px;" onclick="showContent('curricula', true)">Curricula</a></li>
             <li><a href="javascript:void(0)" style="padding-left:40px;" onclick="showContent('dash_generator', true)">Dash generator</a></li>
             <li><a href="javascript:void(0)" style="padding-left:40px;" onclick="showContent('arp_entry', true)">Arp entry</a> </li>
@@ -1985,137 +1984,7 @@ def get_accuracy(self, logits_preds, decimal_labels, query_mask):
                 function logs that the port has been blocked.
             </p>
         </div>
-        <div id="consumer_thread" class="content">
-            <h2>Kafka Consumer Thread for Metrics Monitoring</h2>
-            <p>This script is a part of the Smartville project and is responsible for consuming messages from a Kafka
-                topic,
-                updating various performance metrics, and monitoring the system for any anomalies.</p>
-
-            <h3>Class: ConsumerThread</h3>
-            <p>The <code>ConsumerThread</code> class is a multi-threaded implementation that consumes data from a Kafka
-                topic,
-                updates system metrics like CPU, RAM, network traffic, and latency, and takes appropriate actions if no
-                data is
-                received for an extended period.</p>
-
-            <h4>Method: <code>__init__</code></h4>
-            <p>The constructor initializes the thread with various parameters like Kafka server details, metrics, and
-                topic
-                information.</p>
-            <pre><code>
-            def __init__(
-                self, 
-                bootstrap_servers,
-                topic_name, 
-                topic_object,
-                cpu_metric, 
-                ram_metric, 
-                ping_metric, 
-                incoming_traffic_metric,
-                outcoming_traffic_metric,
-                controller_metrics_dict
-                ):
-            </code></pre>
-
-            <h4>Method: update_cpu_metric</h4>
-            <p>This method updates the CPU metric based on the value received from the Kafka topic and stores it in the
-                metrics dictionary.</p>
-            <pre><code>
-            def update_cpu_metric(self, value, label_value):
-                self.cpu_metric.labels(label_name=label_value).set(value)
-                with self.lock:
-                    if value == b'nan' or math.isnan(value):
-                        value = -1.0
-                    self.controller_metrics_dict[self.topic_name][CPU].append(value)
-            </code></pre>
-
-            <h4>Method: run</h4>
-            <p>This method runs the consumer loop, polling messages from the Kafka topic and updating the respective
-                metrics.
-                If no messages are received for a specified time, it stops the thread and deletes the topic from the
-                Kafka
-                server.</p>
-            <pre><code>
-            def run(self):
-                # Kafka consumer and admin client configuration
-                consumer_conf = {'bootstrap.servers': self.bootstrap_servers, 
-                                 'group.id': 'my-group'}
-                consumer = Consumer(consumer_conf)
         
-                conf = {'bootstrap.servers': self.bootstrap_servers}
-                admin_client = AdminClient(conf)
-                
-                delete_ok = False
-                end_message = str(math.nan).encode('utf-8')
-                stopper = 0       
-        
-                num_partitions = len(self.topic_object.partitions)
-        
-                if (num_partitions==5):
-                    consumer.subscribe([self.topic_name])
-        
-                    try:
-                        while not self.exit_signal.is_set():
-                            msg = consumer.poll(timeout=3)
-        
-                            if msg is None :
-                                self.update_cpu_metric(end_message, self.topic_name)
-                                self.update_ram_metric(end_message, self.topic_name)
-                                self.update_ping_metric(end_message, self.topic_name)
-                                self.update_incoming_traffic_metric(end_message, self.topic_name)
-                                self.update_outcoming_traffic_metric(end_message, self.topic_name)
-        
-                                stopper += 1
-                                if (stopper <40)
-                                    continue
-                                else:
-                                    delete_ok = True
-                                    break
-                            if msg.error():
-                                if msg.error().code() == KafkaException._PARTITION_EOF:
-                                    print(f'Partition {msg.partition()} terminated')
-                                    continue
-                                else:
-                                    print(f'Error: {msg.error()}')
-                                    break
-        
-                            if (msg.partition()==0):
-                                self.update_cpu_metric(float(msg.value()), self.topic_name)
-                                stopper = 0
-        
-                            elif (msg.partition()==1):
-                                self.update_ram_metric(float(msg.value()), self.topic_name)
-                                stopper = 0
-        
-                            elif (msg.partition()==2):
-                                self.update_ping_metric(float(msg.value()), self.topic_name)
-                                stopper = 0
-        
-                            elif (msg.partition()==3):
-                                self.update_incoming_traffic_metric(float(msg.value()), self.topic_name)
-                                stopper = 0
-        
-                            elif (msg.partition()==4):
-                                self.update_outcoming_traffic_metric(float(msg.value()), self.topic_name)
-                                stopper = 0
-                    finally:
-                        if delete_ok:
-                            admin_client.delete_topics([self.topic_name])
-        
-                        print(f"{self.topic_name}: stopped thread")
-                else:
-                    admin_client.delete_topics([self.topic_name])
-                    print(f"topic {self.topic_name} did not registered correctly")
-            </pre></code>
-
-            <h4>Method: stop_threads</h4>
-            <p>This method sets an event to signal the thread to stop running.</p>
-            <pre><code>
-            def stop_threads(self):
-                print("Stopping thread...")
-                self.exit_signal.set()
-            </code></pre>
-        </div>
         <div id="curricula" class="content">
             <h2>Smartville Attack Classification Dictionaries</h2>
             <p>This section is part of the Smartville project, and it defines various dictionaries used to classify IP addresses associated with specific types of attacks. The dictionaries categorize IPs into known attack types, Zero-Day Attacks (ZdA), and assign them to training and testing groups.</p>
