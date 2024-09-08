@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smartville Documentation</title>
+    <!-- Collegamento al file CSS esterno -->
+    <link rel="stylesheet" href="../style.css">
+    <script src="../script.js" defer></script>
+</head>
+
+<body>
+
+    <div class="sidebar">
+        <a href="Intro.html">Introduction</a>
+        <a href="Installation.html">Installation</a>
+        <a href="Usage.html">Usage</a>
+        <a href="Background.html">Background</a>
+        <a href="Docker.html">Docker Containers</a>
+        <a href="Platform.html">Grafana, Kafka, Prometheus</a>
+        <a href="PN.html">Prototypical Networks</a>
+        <a href="License.html">License</a>
+        <a href="Citation.html">Citation</a>
+        <a href="javascript:void(0) " onclick="toggleSubcategories('codeSubcategories')">Code</a>
+        <div id="codeSubcategories" style="display:none;">
+            <a href="../pox_controller/pox_controller.html" style="padding-left:20px;">pox_controller</a>
+            <ul id="poxControllerSubcategories" style="display:none;">
+                <li><a href="javascript:void(0)" style="padding-left:40px;"
+                        onclick="showContent('neural_models', true)">Neural models</a></li>
+                <li><a href="javascript:void(0)" style="padding-left:40px;"
+                        onclick="showContent('controller_brain', true)">Controller brain</a></li>
+                <li><a href="javascript:void(0)" style="padding-left:40px;"
+                        onclick="showContent('graph_generator', true)">Graph generator</a></li>
+                <li><a href="javascript:void(0)" style="padding-left:40px;"
+                        onclick="showContent('consumer_thread', true)">Consumer Thread</a></li>
+                <li><a href="javascript:void(0)" style="padding-left:40px;"
+                        onclick="showContent('smart_controller', true)">Smart Controller</a></li>
+                <li><a href="javascript:void(0)" style="padding-left:40px;" onclick="showContent('ai', true)">Ai</a>
+                </li>
+
+            </ul>
+        </div>
+    </div>
+    <div class="main-content">
+        <div class="header">
+            <h1><a href="../index.html" style="text-decoration: none;">Smartville</h1></a>
+            <p>This is the official SmartVille repository</p>
+            <p>Smartville is an open-source testbed based on GNS3, Pytorch, and Docker for training and testing online
+                intrusion detection systems based on machine learning.</p>
+            <p>Feel free to contribute!</p>
+            <p>The related paper <em>"SmartVille: an open-source SDN online-intrusion detection testbed"</em> is under
+                review. Stay tuned!</p>
+        </div>
+
+        <h2>Installation</h2>
+        <h3>Setting Up the Program on a Native Linux Distribution or WSL</h3>
+        <p>This guide provides step-by-step instructions for setting up the testbed on a native Linux distribution.
+            We have not verified if it works on the Windows Subsystem for Linux (WSL).</p>
+        <h4>GNS3</h4>
+        <p>Install the GNS3 software following the official documentation at: <a
+                href="https://docs.gns3.com/docs/getting-started/installation/linux/">https://docs.gns3.com/docs/getting-started/installation/linux/</a>
+        </p>
+        <p>Start the server either via GUI or by running:</p>
+        <pre>gns3server</pre>
+        <p>The server will run on <em>localhost:3080</em> as default.</p>
+        <h4>Dependencies</h4>
+        <p>All the required dependencies are listed in the <code>requirements.txt</code> file.</p>
+        <pre>pip install -r requirements.txt</pre>
+        <h4>Docker Images</h4>
+        <p>The docker images used to build the nodes can be obtained by running the Makefile:</p>
+        <pre>make all</pre>
+        <h4>Setup</h4>
+        <p>Modify the line 21 in file <code>controller.dockerfile</code> and insert your wandb API key as:</p>
+        <pre>your_wandb_api_key.txt</pre>
+
+</body>
+
+</html>

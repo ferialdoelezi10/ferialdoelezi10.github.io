@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smartville Documentation</title>
+    <!-- Collegamento al file CSS esterno -->
+    <link rel="stylesheet" href="../style.css">
+    <script src="../script.js" defer></script>
+</head>
+
+<body>
+
+    <div class="sidebar">
+        <a href="Intro.html">Introduction</a>
+        <a href="Installation.html">Installation</a>
+        <a href="Usage.html">Usage</a>
+        <a href="Background.html">Background</a>
+        <a href="Docker.html">Docker Containers</a>
+        <a href="Platform.html">Grafana, Kafka, Prometheus</a>
+        <a href="PN.html">Prototypical Networks</a>
+        <a href="License.html">License</a>
+        <a href="Citation.html">Citation</a>
+        <a href="javascript:void(0) " onclick="toggleSubcategories('codeSubcategories')">Code</a>
+        <div id="codeSubcategories" style="display:none;">
+            <a href="../pox_controller/pox_controller.html" style="padding-left:20px;">pox_controller</a>
+            <ul id="poxControllerSubcategories" style="display:none;">
+                <li><a href="javascript:void(0)" style="padding-left:40px;"
+                        onclick="showContent('neural_models', true)">Neural models</a></li>
+                <li><a href="javascript:void(0)" style="padding-left:40px;"
+                        onclick="showContent('controller_brain', true)">Controller brain</a></li>
+                <li><a href="javascript:void(0)" style="padding-left:40px;"
+                        onclick="showContent('graph_generator', true)">Graph generator</a></li>
+                <li><a href="javascript:void(0)" style="padding-left:40px;"
+                        onclick="showContent('consumer_thread', true)">Consumer Thread</a></li>
+                <li><a href="javascript:void(0)" style="padding-left:40px;"
+                        onclick="showContent('smart_controller', true)">Smart Controller</a></li>
+                <li><a href="javascript:void(0)" style="padding-left:40px;" onclick="showContent('ai', true)">Ai</a>
+                </li>
+
+            </ul>
+        </div>
+    </div>
+    <div class="main-content">
+        <div class="header">
+            <h1><a href="../index.html" style="text-decoration: none;">Smartville</h1></a>
+            <p>This is the official SmartVille repository</p>
+            <p>Smartville is an open-source testbed based on GNS3, Pytorch, and Docker for training and testing online
+                intrusion detection systems based on machine learning.</p>
+            <p>Feel free to contribute!</p>
+            <p>The related paper <em>"SmartVille: an open-source SDN online-intrusion detection testbed"</em> is under
+                review. Stay tuned!</p>
+        </div>
+
+        <h2>Docker Containers</h2>
+        <p>A Docker container characterizes each node in the SmartVille testbed. The container images are
+            buildable using the corresponding Dockerfiles that handle all the dependencies and the nodes'
+            internal file-system structure.</p>
+        <p>This example of code represents the Dockerfile of each victim node. It's possible to identify four
+            main Docker containers in our testbed:</p>
+        <ul>
+            <li><strong>Controller:</strong> All the dependencies to run the controller and a suite of
+                networking tools are installed. The POX library and PyTorch are retrieved and set to the
+                gar-experimental branch. Kafka, Grafana, and Prometheus tools are retrieved and ports 9090,
+                9092, and 3000 are exposed to allow the instance of the three servers. Lastly, the script
+                entrypoint.sh, which keeps the application alive, is run.</li>
+            <li><strong>Victim:</strong> All the dependencies to run the victim behavior are installed (Python3,
+                TCP Replay, Scapy, Kafka, network tools) and the victim's scripts are imported into the file
+                system.</li>
+            <li><strong>Attacker:</strong> All the dependencies to run the attacker behavior are installed
+                (Python3, TCP Replay, Scapy, Kafka, network tools) and the scripts of the different cyberattacks
+                are copied into the file system.</li>
+            <li><strong>Switch:</strong> The container of the OpenVSwitch is based on the official GNS3
+                OpenVSwitch appliance. However, the boot kernel has been modified to suit our application
+                scenario via the boot.sh script.</li>
+        </ul>
+        <p>The Docker containers can be modified to match the configuration of every desired device that needs
+            to be emulated in the network topology.</p>
+
+        <h3>OpenFlow Switch</h3>
+        <p>The OpenVSwitch is based on the GNS3 appliance, but the boot kernel is modified at launch by the
+            boot.sh script:</p>
+        <p>The last part of the script sets the switch to listen for a controller on physical port br0 with IP
+            address 192.168.1.1 port 6633. This part can be modified to fit the desired IP range case scenario.
+        </p>
+        <p>OpenFlow switches operate based on a set of high-level commands defined by the OpenFlow protocol,
+            providing a flexible and programmable approach to network management. When an OpenFlow controller
+            issues OpenFlow commands, such as flow table modifications or routing instructions, the switch
+            processes these directives to define its forwarding behavior. The switch maintains a flow table that
+            stores rules specifying how to handle incoming packets. Each rule is characterized by a set of
+            fields that identify the sender, the receiver, the used communication protocol, and a set of actions
+            to perform when the switch receives a packet that matches those fields. Each time a packet is
+            received by the switch, it consults its flow table to determine the appropriate action to perform,
+            such as forwarding, dropping, or modifying the packet.</p>
+        <p>If none of the rules match the packet's parameters, a flow miss occurs. The packet is sent to the
+            controller, which has to build and send back an appropriate OpenFlow command to the switch. This
+            ensures that the next time a similar packet arrives, it will trigger a flow hit and be handled
+            directly by the switch. This paradigm allows for dynamic network behavior adjustments, as the
+            controller can remotely instruct switches to adapt to changing network conditions. OpenFlow's
+            separation of the control and data planes empowers administrators to centrally manage and
+            orchestrate network policies, enabling agility and responsiveness in modern network infrastructures.
+        </p>
+
+</body>
+
+</html>

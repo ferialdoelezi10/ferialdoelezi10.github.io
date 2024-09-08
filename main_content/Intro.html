@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smartville Documentation</title>
+    <!-- Collegamento al file CSS esterno -->
+    <link rel="stylesheet" href="../style.css">
+    <script src="../script.js" defer></script>
+</head>
+
+<body>
+
+    <div class="sidebar">
+        <a href="Intro.html">Introduction</a>
+        <a href="Installation.html">Installation</a>
+        <a href="Usage.html">Usage</a>
+        <a href="Background.html">Background</a>
+        <a href="Docker.html">Docker Containers</a>
+        <a href="Platform.html">Grafana, Kafka, Prometheus</a>
+        <a href="PN.html">Prototypical Networks</a>
+        <a href="License.html">License</a>
+        <a href="Citation.html">Citation</a>
+        <a href="javascript:void(0) " onclick="toggleSubcategories('codeSubcategories')">Code</a>
+        <div id="codeSubcategories" style="display:none;">
+            <a href="../pox_controller/pox_controller.html" style="padding-left:20px;">pox_controller</a>
+            <ul id="poxControllerSubcategories" style="display:none;">
+                <li><a href="javascript:void(0)" style="padding-left:40px;"
+                        onclick="showContent('neural_models', true)">Neural models</a></li>
+                <li><a href="javascript:void(0)" style="padding-left:40px;"
+                        onclick="showContent('controller_brain', true)">Controller brain</a></li>
+                <li><a href="javascript:void(0)" style="padding-left:40px;"
+                        onclick="showContent('graph_generator', true)">Graph generator</a></li>
+                <li><a href="javascript:void(0)" style="padding-left:40px;"
+                        onclick="showContent('consumer_thread', true)">Consumer Thread</a></li>
+                <li><a href="javascript:void(0)" style="padding-left:40px;"
+                        onclick="showContent('smart_controller', true)">Smart Controller</a></li>
+                <li><a href="javascript:void(0)" style="padding-left:40px;" onclick="showContent('ai', true)">Ai</a>
+                </li>
+
+            </ul>
+        </div>
+    </div>
+    <div class="main-content">
+        <div class="header">
+            <h1><a href="../index.html" style="text-decoration: none;">Smartville</h1></a>
+            <p>This is the official SmartVille repository</p>
+            <p>Smartville is an open-source testbed based on GNS3, Pytorch, and Docker for training and testing online
+                intrusion detection systems based on machine learning.</p>
+            <p>Feel free to contribute!</p>
+            <p>The related paper <em>"SmartVille: an open-source SDN online-intrusion detection testbed"</em> is under
+                review. Stay tuned!</p>
+        </div>
+
+        <h2>Introduction</h2>
+        <p>Networking environments are composed of a data plane, responsible for forwarding packets, and a
+            control plane, responsible for determining how packets are forwarded. To illustrate the difference
+            between SDN and traditional networking, consider the following example. If Alice wants to email Bob,
+            Alice’s router will forward the packets (data plane) according to its routing table (control plane)
+            to Bob’s router. In traditional networking, the data and control planes reside on the same device,
+            whereas in SDN, a separate "layer" known as the controller is added between the data plane and the
+            control plane. The controller acts as centralized intelligence that specifies how the nodes must
+            handle the packets.</p>
+</body>
+
+</html>

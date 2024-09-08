@@ -1,0 +1,2993 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pox controller</title>
+    <link rel="stylesheet" href="../style.css">
+    <script src="../script.js" defer></script>
+</head>
+
+<body>
+
+    <div class="sidebar" id="sidebar">
+        <a href="../main_content/Intro.html">Introduction</a>
+        <a href="../main_content/Installation.html">Installation</a>
+        <a href="../main_content/Usage.html">Usage</a>
+        <a href="../main_content/Background.html">Background</a>
+        <a href="../main_content/Docker.html">Docker Containers</a>
+        <a href="../main_content/platform.html">Grafana, Kafka, Prometheus</a>
+        <a href="../main_content/PN.html">Prototypical Networks</a>
+        <a href="../main_content/License.html">License</a>
+        <a href="../main_content/Citation.html">Citation</a>
+        <a href="javascript:void(0)" style="padding-left:20px;"
+            onclick="toggleSubcategories('poxControllerSubcategories')">pox_controller</a>
+        <ul id="poxControllerSubcategories">
+            <li><a href="javascript:void(0)" style="padding-left:40px;" onclick="showContent('neural_models', true)">Neural models</a></li>
+            <li><a href="javascript:void(0)" style="padding-left:40px;" onclick="showContent('controller_brain', true)">Controller brain</a></li>
+            <li><a href="javascript:void(0)" style="padding-left:40px;" onclick="showContent('graph_generator', true)">Graph generator</a></li>
+            <li><a href="javascript:void(0)" style="padding-left:40px;" onclick="showContent('consumer_thread', true)">Consumer Thread</a></li>
+            <li><a href="javascript:void(0)" style="padding-left:40px;" onclick="showContent('smart_controller', true)">Smart Controller</a></li>
+            <li><a href="javascript:void(0)" style="padding-left:40px;" onclick="showContent('ai', true)">Ai</a></li>
+            <li><a href="javascript:void(0)" style="padding-left:40px;" onclick="showContent('consumer_thread', true)">Consumer thread</a></li>
+            <li><a href="javascript:void(0)" style="padding-left:40px;" onclick="showContent('curricula', true)">Curricula</a></li>
+            <li><a href="javascript:void(0)" style="padding-left:40px;" onclick="showContent('dash_generator', true)">Dash generator</a></li>
+            <li><a href="javascript:void(0)" style="padding-left:40px;" onclick="showContent('arp_entry', true)">Arp entry</a> </li>
+            <li><a href="javascript:void(0)" style="padding-left:40px;" onclick="showContent('flow', true)">Flow</a></li>
+            <li><a href="javascript:void(0)" style="padding-left:40px;" onclick="showContent('flow_logger', true)">Flow logger</a></li>
+            <li><a href="javascript:void(0)" style="padding-left:40px;" onclick="showContent('grafana_prometheus', true)">Grafana-prometheus</a></li>
+            <li><a href="javascript:void(0)" style="padding-left:40px;" onclick="showContent('metrics_logger', true)">Metrics Logger</a></li>
+            <li><a href="javascript:void(0)" style="padding-left:40px;" onclick="showContent('replay_buffer', true)">Replay buffer</a></li>
+            <li><a href="javascript:void(0)" style="padding-left:40px;" onclick="showContent('set_prometheus', true)">Prometheus Server</a></li>
+            <li><a href="javascript:void(0)" style="padding-left:40px;" onclick="showContent('wandb_tracker', true)">Wandb Tracker</a></li>      
+        </ul>
+    </div>
+    </div>
+    <div class="main-content">
+        <div class="header">
+            <h1><a href="../index.html" style="text-decoration: none;">Smartville</h1></a>
+            <p>This is the official SmartVille repository</p>
+            <p>Smartville is an open-source testbed based on GNS3, Pytorch, and Docker for training and testing online
+                intrusion detection systems based on machine learning.</p>
+            <p>Feel free to contribute!</p>
+            <p>The related paper <em>"SmartVille: an open-source SDN online-intrusion detection testbed"</em> is under
+                review. Stay tuned!</p>
+        </div>
+        <div id="neural_models" class="content">
+            <h2>Neural Models</h2>
+            <p>This file defines a set of neural network models and related components designed for network traffic
+                analysis and anomaly detection. The key elements include recurrent models (using GRU layers) to process
+                sequential data, a series of multi-stream classifiers that combine different types of network flow data,
+                and various kernel regression models that predict relationships between data points in high-dimensional
+                spaces. The classifiers use a prototypical approach for multi-class classification, which involves
+                calculating distances between data points and class centroids in a latent space. Additionally, the file
+                includes a confidence decoder to assess the reliability of predictions and specialized loss functions to
+                optimize the models during training.</p>
+
+            <h3>Class: RecurrentModel</h3>
+            <p>The <code>RecurrentModel</code> class is a recurrent model that uses a GRU (Gated Recurrent Unit) to
+                process data sequences.</p>
+            <pre><code>
+    import torch
+    import torch.nn as nn
+    import torch.nn.functional as F
+    
+    class RecurrentModel(nn.Module):
+        def __init__(self, input_size, hidden_size, device='cpu'):
+            super(RecurrentModel, self).__init__()
+            self.device = device
+            self.hidden_size = hidden_size
+            self.gru = nn.GRU(input_size, hidden_size, batch_first=True)
+    
+        def forward(self, x):
+            h0 = torch.zeros(1, x.size(0), self.hidden_size).to(x.device)
+            out, _ = self.gru(x, h0)
+            return F.relu(out[:, -1, :])
+        </code></pre>
+            <h4>Method: __init__</h4>
+            <p>This constructor initializes the <code>RecurrentModel</code> with the given input size, hidden size, and
+                device.</p>
+            <p><strong>Description:</strong>
+                The <code>__init__</code> method sets up the GRU layer, which will process the sequential data. It also
+                defines the device (CPU or GPU) on which the model will run and the size of the hidden state for the
+                GRU.
+            </p>
+
+            <h4>Method: forward</h4>
+            <p>This method defines the forward pass of the model, processing the input data through the GRU and applying
+                a ReLU activation function.</p>
+            <p><strong>Description:</strong>
+                The <code>forward</code> method initializes the hidden state <code>h0</code>, processes the input
+                sequence through the GRU, and applies a ReLU activation to the output of the last time step. This
+                processed output is used for further analysis or classification.
+            </p>
+
+            <h3>Class: MulticlassPrototypicalClassifier</h3>
+            <p>The <code>MulticlassPrototypicalClassifier</code> class is a classifier that uses prototypes for
+                multiclass classification.</p>
+            <pre><code>
+    class MulticlassPrototypicalClassifier(nn.Module):
+        def __init__(self, device='cpu'):
+            super(MulticlassPrototypicalClassifier, self).__init__()
+            self.device = device
+    
+        def get_oh_labels(self, decimal_labels, n_way):
+            labels_onehot = torch.zeros([decimal_labels.size()[0], n_way], device=self.device)
+            labels_onehot = labels_onehot.scatter(1, decimal_labels, 1)
+            return labels_onehot
+    
+        def get_centroids(self, hidden_vectors, onehot_labels):
+            cluster_agg = onehot_labels.T @ hidden_vectors
+            samples_per_cluster = onehot_labels.sum(0)
+            centroids = torch.zeros_like(cluster_agg, device=self.device)
+            missing_clusters = samples_per_cluster == 0
+            existent_centroids = cluster_agg[~missing_clusters] / samples_per_cluster[~missing_clusters].unsqueeze(-1)
+            centroids[~missing_clusters] = existent_centroids
+            return centroids, missing_clusters
+    
+        def forward(self, hidden_vectors, labels, known_attacks_count, query_mask):
+            oh_labels = self.get_oh_labels(decimal_labels=labels.long(), n_way=known_attacks_count)
+            centroids, _ = self.get_centroids(hidden_vectors[~query_mask], oh_labels[~query_mask])
+            scores = 1 / (torch.cdist(hidden_vectors[query_mask], centroids) + 1e-10)
+            return scores
+        </code></pre>
+
+            <h4>Method: __init__</h4>
+            <p>This constructor initializes the classifier with the specified device.</p>
+            <p><strong>Description:</strong>
+                The <code>__init__</code> method sets up the <code>MulticlassPrototypicalClassifier</code> to run on the
+                specified device (either CPU or GPU), preparing it to handle multi-class classification tasks.
+            </p>
+
+            <h4>Method: get_oh_labels</h4>
+            <p>This method generates one-hot encoded labels from decimal labels.</p>
+            <p><strong>Description:</strong>
+                The <code>get_oh_labels</code> method converts decimal labels into one-hot encoded vectors. This is
+                essential for computing the centroids of different classes, as it allows for easy aggregation of hidden
+                vectors corresponding to each class.
+            </p>
+
+            <h4>Method: get_centroids</h4>
+            <p>This method computes the centroids of clusters based on hidden vectors and one-hot labels.</p>
+            <p><strong>Description:</strong>
+                The <code>get_centroids</code> method calculates the centroids of the clusters in the latent space by
+                averaging the hidden vectors of data points belonging to each class. If a class has no data points, the
+                centroid is marked as missing.
+            </p>
+
+            <h4>Method: forward</h4>
+            <p>This method defines the forward pass of the model, calculating scores based on centroids and distances.
+            </p>
+            <p><strong>Description:</strong>
+                The <code>forward</code> method performs the main classification task. It calculates the one-hot labels,
+                computes the centroids of the known classes, and then determines the distance between the hidden vectors
+                of the query data points and the class centroids. The scores represent the inverse of these distances,
+                used for classification.
+            </p>
+
+            <h3>Class: MultiClassFlowClassifier</h3>
+            <p>The <code>MultiClassFlowClassifier</code> class is a classifier that uses multiclass data flows.</p>
+            <pre><code>
+    class MultiClassFlowClassifier(nn.Module):
+        def __init__(self, input_size, hidden_size, dropout_prob=0.2, kr_heads=8, device='cpu'):
+            super(MultiClassFlowClassifier, self).__init__()
+            self.device = device
+            self.normalizer = nn.BatchNorm1d(input_size)
+            self.rnn = RecurrentModel(input_size, hidden_size, device=self.device)
+            self.kernel_regressor = HighDimKernelRegressor(in_features=hidden_size, out_features=hidden_size, n_heads=kr_heads, dropout=dropout_prob, device=self.device)
+            self.classifier = MulticlassPrototypicalClassifier(device=self.device)
+    
+        def forward(self, x, labels, curr_known_attack_count, query_mask):
+            x = self.normalizer(x.permute((0,2,1))).permute((0,2,1))
+            hiddens = self.rnn(x)
+            hiddens, predicted_kernel = self.kernel_regressor(hiddens)
+            logits = self.classifier(hiddens, labels, curr_known_attack_count, query_mask)
+            return logits, hiddens, predicted_kernel
+        </code></pre>
+
+            <h4>Method: __init__</h4>
+            <p>This constructor initializes the classifier with input size, hidden state size, dropout probability, and
+                the number of heads for the kernel regressor.</p>
+            <p><strong>Description:</strong>
+                The <code>__init__</code> method configures the <code>MultiClassFlowClassifier</code> with parameters
+                like input size, hidden size, dropout probability, and the number of attention heads in the kernel
+                regressor. It combines several components, including a normalizer, an RNN, and a kernel regressor, to
+                form a comprehensive classification model.
+            </p>
+
+            <h4>Method: forward</h4>
+            <p>This method defines the forward pass of the model, normalizing the input, passing through the RNN model
+                and kernel regressor, and finally classifying using the prototypical classifier.</p>
+            <p><strong>Description:</strong>
+                The <code>forward</code> method takes the input data, normalizes it, processes it through the RNN, and
+                then applies the kernel regressor to compute similarity kernels. The resulting hidden states and kernels
+                are then classified using the prototypical classifier to produce logits, which are used for
+                decision-making.
+            </p>
+
+            <h3>Class: TwoStreamMulticlassFlowClassifier</h3>
+            <p>The <code>TwoStreamMulticlassFlowClassifier</code> class is a classifier that uses two streams of
+                multiclass data.</p>
+            <pre><code>
+    class TwoStreamMulticlassFlowClassifier(nn.Module):
+        def __init__(self, flow_input_size, second_stream_input_size, hidden_size, dropout_prob=0.2, kr_heads=8, device='cpu'):
+            super(TwoStreamMulticlassFlowClassifier, self).__init__()
+            self.device = device
+            self.flow_normalizer = nn.BatchNorm1d(flow_input_size)
+            self.flow_rnn = RecurrentModel(flow_input_size, hidden_size, device=self.device)
+            self.second_stream_normalizer = nn.BatchNorm1d(second_stream_input_size)
+            self.second_stream_rnn = RecurrentModel(second_stream_input_size, hidden_size, device=self.device)
+            self.kernel_regressor = HighDimKernelRegressor(in_features=hidden_size*2, out_features=hidden_size, n_heads=kr_heads, dropout=dropout_prob, device=self.device)
+            self.classifier = MulticlassPrototypicalClassifier(device=self.device)
+    
+        def forward(self, flows, second_domain_feats, labels, curr_known_attack_count, query_mask):
+            flows = self.flow_normalizer(flows.permute((0,2,1))).permute((0,2,1))
+            second_domain_feats = self.second_stream_normalizer(second_domain_feats.permute((0,2,1))).permute((0,2,1))
+    
+            flows = self.flow_rnn(flows)
+            second_domain_feats = self.second_stream_rnn(second_domain_feats)
+    
+            hiddens = torch.cat([flows, second_domain_feats], dim=1)
+    
+            hiddens, predicted_kernel = self.kernel_regressor(hiddens)
+            logits = self.classifier(hiddens, labels, curr_known_attack_count, query_mask)
+    
+            return logits, hiddens, predicted_kernel
+        </code></pre>
+
+            <h4>Method: __init__</h4>
+            <p>This constructor initializes the classifier with two input streams, hidden state size, dropout
+                probability, and number of heads for the kernel regressor.</p>
+            <p><strong>Description:</strong>
+                The <code>__init__</code> method configures the <code>TwoStreamMulticlassFlowClassifier</code> to handle
+                two distinct input data streams, initializing normalization layers and RNNs for both streams. It also
+                sets up a kernel regressor to combine the outputs from both streams before classification.
+            </p>
+
+            <h4>Method: forward</h4>
+            <p>This method defines the forward pass of the model, normalizing the input streams, passing through the RNN
+                models, and finally classifying using the prototypical classifier.</p>
+            <p><strong>Description:</strong>
+                The <code>forward</code> method processes two separate data streams through their respective
+                normalization layers and RNNs, concatenates the outputs, and then applies the kernel regressor. The
+                combined data is classified using the prototypical classifier, providing logits for decision-making.
+            </p>
+
+            <h3>Class: ThreeStreamMulticlassFlowClassifier</h3>
+            <p>The <code>ThreeStreamMulticlassFlowClassifier</code> class is a classifier that uses three streams of
+                multiclass data.</p>
+            <pre><code>
+    class ThreeStreamMulticlassFlowClassifier(nn.Module):
+        def __init__(self, flow_input_size, second_stream_input_size, third_stream_input_size, hidden_size, dropout_prob=0.2, kr_heads=8, device='cpu'):
+            super(ThreeStreamMulticlassFlowClassifier, self).__init__()
+            self.device = device
+            self.flow_normalizer = nn.BatchNorm1d(flow_input_size)
+            self.flow_rnn = RecurrentModel(flow_input_size, hidden_size, device=self.device)
+            self.second_stream_normalizer = nn.BatchNorm1d(second_stream_input_size)
+            self.second_stream_rnn = RecurrentModel(second_stream_input_size, hidden_size, device=self.device)
+            self.third_stream_normalizer = nn.BatchNorm1d(third_stream_input_size)
+            self.third_stream_rnn = RecurrentModel(third_stream_input_size, hidden_size, device=self.device)
+            self.kernel_regressor = HighDimKernelRegressor(in_features=hidden_size*3, out_features=hidden_size, n_heads=kr_heads, dropout=dropout_prob, device=self.device)
+            self.classifier = MulticlassPrototypicalClassifier(device=self.device)
+    
+        def forward(self, flows, second_domain_feats, third_domain_feats, labels, curr_known_attack_count, query_mask):
+            flows = self.flow_normalizer(flows.permute((0,2,1))).permute((0,2,1))
+            second_domain_feats = self.second_stream_normalizer(second_domain_feats.permute((0,2,1))).permute((0,2,1))
+            third_domain_feats = self.third_stream_normalizer(third_domain_feats.permute((0,2,1))).permute((0,2,1))
+    
+            flows = self.flow_rnn(flows)
+            second_domain_feats = self.second_stream_rnn(second_domain_feats)
+            third_domain_feats = self.third_stream_rnn(third_domain_feats)
+    
+            hiddens = torch.cat([flows, second_domain_feats, third_domain_feats], dim=1)
+    
+            hiddens, predicted_kernel = self.kernel_regressor(hiddens)
+            logits = self.classifier(hiddens, labels, curr_known_attack_count, query_mask)
+    
+            return logits, hiddens, predicted_kernel
+        </code></pre>
+
+            <h4>Method: __init__</h4>
+            <p>This constructor initializes the classifier with three input streams, hidden state size, dropout
+                probability, and number of heads for the kernel regressor.</p>
+            <p><strong>Description:</strong>
+                The <code>__init__</code> method sets up the <code>ThreeStreamMulticlassFlowClassifier</code> to handle
+                three different data streams. It initializes necessary normalization layers, RNNs, and a kernel
+                regressor to process and combine the information from these streams for classification.
+            </p>
+
+            <h4>Method: forward</h4>
+            <p>This method defines the forward pass of the model, normalizing the input streams, passing through the RNN
+                models, and finally classifying using the prototypical classifier.</p>
+            <p><strong>Description:</strong>
+                The <code>forward</code> method processes three data streams through their respective RNNs and
+                normalizers, concatenates the resulting hidden states, and applies a kernel regressor. The combined
+                hidden states are then classified using the prototypical classifier, producing logits for
+                decision-making.
+            </p>
+
+            <h3>Class: ConfidenceDecoder</h3>
+            <p>The <code>ConfidenceDecoder</code> class is a confidence decoder that transforms confidence scores into
+                unknown indicators.</p>
+            <pre><code>
+    class ConfidenceDecoder(nn.Module):
+        def __init__(self, device):
+            super(ConfidenceDecoder, self).__init__()
+            self.device = device
+    
+        def forward(self, scores):
+            scores = (1 - scores.unsqueeze(-1)).min(1)[0]
+            unknown_indicators = torch.sigmoid(scores)
+            return unknown_indicators
+        </code></pre>
+
+            <h4>Method: __init__</h4>
+            <p>This constructor initializes the decoder with the specified device.</p>
+            <p><strong>Description:</strong>
+                The <code>__init__</code> method prepares the <code>ConfidenceDecoder</code> to run on the specified
+                device (CPU or GPU), setting up the model for subsequent transformations of confidence scores into
+                unknown indicators.
+            </p>
+
+            <h4>Method: forward</h4>
+            <p>This method transforms confidence scores into unknown indicators using a sigmoid function.</p>
+            <p><strong>Description:</strong>
+                The <code>forward</code> method takes a set of confidence scores, adjusts them by calculating the
+                minimum inverted score, and then applies a sigmoid function to produce an indicator for unknown
+                classifications.
+            </p>
+
+            <h3>Class: KernelRegressionLoss</h3>
+            <p>The <code>KernelRegressionLoss</code> class computes the loss for kernel regression.</p>
+            <pre><code>
+    class KernelRegressionLoss(nn.Module):
+        def __init__(self, repulsive_weigth=1, attractive_weigth=1, device='cpu'):
+            super(KernelRegressionLoss, self).__init__()
+            self.r_w = repulsive_weigth
+            self.a_w = attractive_weigth
+            self.device = device
+    
+        def forward(self, baseline_kernel, predicted_kernel):
+            repulsive_CE_term = -(1 - baseline_kernel) * torch.log(1-predicted_kernel + 1e-10)
+            repulsive_CE_term = repulsive_CE_term.sum(dim=1)
+            repulsive_CE_term = repulsive_CE_term.mean()
+    
+            attractive_CE_term = -(baseline_kernel * torch.log(predicted_kernel + 1e-10))
+            attractive_CE_term = attractive_CE_term.sum(dim=1)
+            attractive_CE_term = attractive_CE_term.mean()
+    
+            return (self.r_w * repulsive_CE_term) + (self.a_w * attractive_CE_term)
+        </code></pre>
+
+            <h4>Method: __init__</h4>
+            <p>This constructor initializes the loss calculator with specified repulsive and attractive weights and
+                device.</p>
+            <p><strong>Description:</strong>
+                The <code>__init__</code> method sets up the <code>KernelRegressionLoss</code> with weights that control
+                the balance between repulsive and attractive forces in the loss function. It also initializes the device
+                on which the calculations will be performed.
+            </p>
+
+            <h4>Method: forward</h4>
+            <p>This method computes the loss for kernel regression by combining repulsive and attractive forces.</p>
+            <p><strong>Description:</strong>
+                The <code>forward</code> method calculates the cross-entropy loss for both repulsive and attractive
+                terms between baseline and predicted kernels. It then combines these terms using the specified weights
+                to produce the overall loss value, which is used for optimizing the model during training.
+            </p>
+
+            <h3>Class: SimilarityNet</h3>
+            <p>The <code>SimilarityNet</code> class computes the similarity between two vectors.</p>
+            <pre><code>
+    class SimmilarityNet(nn.Module):
+        def __init__(self, h_dim):
+            super(SimmilarityNet, self).__init__()
+            self.act = nn.LeakyReLU(0.2)
+            self.fc1 = nn.Linear(h_dim, h_dim // 2)
+            self.fc2 = nn.Linear(h_dim // 2, 1)
+    
+        def forward(self, x1, x2):
+            input_to_symm = torch.abs(x1 - x2)
+            symm = self.fc1(input_to_symm)
+            symm = self.act(symm)
+            symm = self.fc2(symm)
+            return symm
+        </code></pre>
+
+            <h4>Method: __init__</h4>
+            <p>This constructor initializes the similarity network with the dimension of the input vectors.</p>
+            <p><strong>Description:</strong>
+                The <code>__init__</code> method sets up the <code>SimilarityNet</code> to compute similarities between
+                vectors of a specified dimension. It initializes the layers and activation function required for this
+                task.
+            </p>
+
+            <h4>Method: forward</h4>
+            <p>This method computes the similarity between two vectors using a two-layer neural network with LeakyReLU
+                activation.</p>
+            <p><strong>Description:</strong>
+                The <code>forward</code> method calculates the similarity between two input vectors by computing their
+                absolute difference, passing it through a fully connected layer, applying a LeakyReLU activation, and
+                then generating a similarity score through another fully connected layer.
+            </p>
+
+            <h3>Class: HighDimKernelRegressor</h3>
+            <p>The <code>HighDimKernelRegressor</code> class is a high-dimensional kernel regressor that uses a
+                similarity network.</p>
+            <pre><code>
+    class HighDimKernelRegressor(nn.Module):
+        def __init__(self, in_features, out_features, n_heads, is_concat=False, dropout=0.0, leaky_relu_negative_slope=0.2, share_weights=True, device='cpu'):
+            super(HighDimKernelRegressor, self).__init__()
+            self.device = device
+            self.w = nn.Parameter(torch.tensor(1.0))
+            self.b = nn.Parameter(torch.tensor(-0.5))
+            self.similarity_network = SimmilarityNet(h_dim=in_features)
+    
+        def forward(self, hiddens):
+            n_nodes = hiddens.shape[0]
+            h_pivot = hiddens.repeat(n_nodes, 1)
+            h_interleave = hiddens.repeat_interleave(n_nodes, dim=0)
+            energies = self.similarity_network(h_pivot, h_interleave)
+            kernel = torch.sigmoid(energies)
+            kernel = kernel.reshape(n_nodes, n_nodes)
+            return hiddens, kernel
+        </code></pre>
+
+            <h4>Method: __init__</h4>
+            <p>This constructor initializes the regressor with the specified parameters and a similarity network.</p>
+            <p><strong>Description:</strong>
+                The <code>__init__</code> method sets up the <code>HighDimKernelRegressor</code> to handle
+                high-dimensional data by initializing a similarity network and configuring parameters like the number of
+                features, attention heads, and dropout rate.
+            </p>
+
+            <h4>Method: forward</h4>
+            <p>This method defines the forward pass of the kernel regressor, computing kernels and similarity energies
+                between hidden vectors.</p>
+            <p><strong>Description:</strong>
+                The <code>forward</code> method calculates pairwise similarity scores between all pairs of hidden
+                vectors by passing them through the similarity network. It then applies a sigmoid function to these
+                scores to produce a kernel matrix, representing the relationships between the data points.
+            </p>
+
+            <h3>Class: SimpleKernelRegressor</h3>
+            <p>The <code>SimpleKernelRegressor</code> class is a simple kernel regressor that computes distance-based
+                kernels.</p>
+            <pre><code>
+    class SimpleKernelRegressor(nn.Module):
+        def __init__(self, in_features, out_features, n_heads, is_concat=False, dropout=0.0, leaky_relu_negative_slope=0.2, share_weights=True, device='cpu'):
+            super(SimpleKernelRegressor, self).__init__()
+            self.device = device
+            self.w = nn.Parameter(torch.tensor(1.0))
+            self.b = nn.Parameter(torch.tensor(-0.5))
+    
+        def forward(self, hiddens):
+            n_nodes = hiddens.shape[0]
+            energies = 1 / (torch.cdist(hiddens, hiddens) + 1e-10)
+            kernel = torch.sigmoid(energies)
+            kernel = kernel.reshape(n_nodes, n_nodes)
+            return hiddens, kernel
+        </code></pre>
+
+            <h4>Method: __init__</h4>
+            <p>This constructor initializes the simple regressor with the specified parameters.</p>
+            <p><strong>Description:</strong>
+                The <code>__init__</code> method configures the <code>SimpleKernelRegressor</code> with basic parameters
+                to compute kernels based on the pairwise distances between hidden vectors. It sets up the weights and
+                biases needed for this task.
+            </p>
+
+            <h4>Method: forward</h4>
+            <p>This method defines the forward pass of the kernel regressor, computing distance-based kernels between
+                hidden vectors.</p>
+            <p><strong>Description:</strong>
+                The <code>forward</code> method computes the reciprocal of the pairwise distances between hidden vectors
+                to create a kernel matrix, which is then passed through a sigmoid function to produce the final kernel
+                values used for downstream tasks.
+            </p>
+
+            <h3>Class: KernelRegressor</h3>
+            <p>The <code>KernelRegressor</code> class is a kernel regressor that uses a graph attention layer (Graph
+                Attention Layer).</p>
+            <pre><code>
+    class KernelRegressor(nn.Module):
+        def __init__(self, in_features, out_features, n_heads, is_concat=False, dropout=0.0, leaky_relu_negative_slope=0.2, share_weights=True, device='cpu'):
+            super(KernelRegressor, self).__init__()
+            self.regressor = GraphAttentionV2Layer(in_features=in_features, out_features=out_features, n_heads=n_heads, is_concat=is_concat, dropout=dropout, leaky_relu_negative_slope=leaky_relu_negative_slope, share_weights=share_weights)
+            self.device = device
+    
+        def forward(self, hiddens):
+            return self.regressor(hiddens)
+        </code></pre>
+
+            <h4>Method: __init__</h4>
+            <p>This constructor initializes the kernel regressor with a graph attention layer.</p>
+            <p><strong>Description:</strong>
+                The <code>__init__</code> method configures the <code>KernelRegressor</code> with a graph attention
+                layer, setting up the necessary parameters for the attention mechanism to operate effectively on the
+                hidden vectors.
+            </p>
+
+            <h4>Method: forward</h4>
+            <p>This method defines the forward pass of the kernel regressor, using a graph attention layer to compute
+                kernels.</p>
+            <p><strong>Description:</strong>
+                The <code>forward</code> method applies a graph attention mechanism to the hidden vectors, computing the
+                attention scores that determine how much each node in the graph influences others. The output is a set
+                of hidden states and attention scores that can be used for further analysis or classification.
+            </p>
+
+            <h3>Class: GraphAttentionV2Layer</h3>
+            <p>The <code>GraphAttentionV2Layer</code> class is a graph attention layer that computes hidden vectors and
+                kernels for graphs.</p>
+            <pre><code>
+    class GraphAttentionV2Layer(nn.Module):
+        def __init__(self, in_features, out_features, n_heads, is_concat=False, dropout=0.1, leaky_relu_negative_slope=0.2, share_weights=True):
+            super().__init__()
+            self.is_concat = is_concat
+            self.n_heads = n_heads
+            self.share_weights = share_weights
+    
+            if is_concat:
+                assert out_features % n_heads == 0
+                self.n_hidden = out_features // n_heads
+            else:
+                self.n_hidden = out_features
+    
+            self.linear_l = nn.Linear(in_features, self.n_hidden * n_heads, bias=False)
+            if share_weights:
+                self.linear_r = self.linear_l
+            else:
+                self.linear_r = nn.Linear(in_features, self.n_hidden * n_heads, bias=False)
+    
+            self.attn = nn.Linear(self.n_hidden, 1, bias=False)
+            self.activation = nn.LeakyReLU(negative_slope=leaky_relu_negative_slope)
+            self.softmax = nn.Softmax(dim=1)
+            self.dropout = nn.Dropout(dropout)
+    
+        def forward(self, h):
+            n_nodes = h.shape[0]
+            g_l = self.linear_l(h).view(n_nodes, self.n_heads, self.n_hidden)
+            g_r = self.linear_r(h).view(n_nodes, self.n_heads, self.n_hidden)
+    
+            g_l_repeat = g_l.repeat(n_nodes, 1, 1)
+            g_r_repeat_interleave = g_r.repeat_interleave(n_nodes, dim=0)
+            g_sum = g_l_repeat + g_r_repeat_interleave
+            g_sum = g_sum.view(n_nodes, n_nodes, self.n_heads, self.n_hidden)
+    
+            e = self.attn(self.activation(g_sum))
+            e = e.squeeze(-1)
+            a = self.softmax(e)
+            a = self.dropout(a)
+    
+            hiddens = torch.einsum('ijh,jhf->ihf', a, g_r)
+    
+            if self.is_concat:
+                hiddens = hiddens.reshape(n_nodes, self.n_heads * self.n_hidden)
+            else:
+                hiddens = hiddens.mean(dim=1)
+    
+            a = a.mean(dim=2)
+            a = a / (a.max(dim=1)[0] + 1e-10)
+            a = a.clamp(min=0, max=1)
+    
+            return hiddens, a
+        </code></pre>
+
+            <h4>Method: __init__</h4>
+            <p>This constructor initializes the graph attention layer with the specified parameters.</p>
+            <p><strong>Description:</strong>
+                The <code>__init__</code> method sets up the <code>GraphAttentionV2Layer</code> with parameters that
+                control how the attention mechanism is applied, including the number of attention heads, whether to
+                concatenate the results, and the dropout rate for regularization.
+            </p>
+
+            <h4>Method: forward</h4>
+            <p>This method defines the forward pass of the graph attention layer, computing hidden vectors and kernels
+                for graphs.</p>
+            <p><strong>Description:</strong>
+                The <code>forward</code> method computes attention scores between nodes in a graph, applies these scores
+                to the hidden states, and produces a set of aggregated hidden vectors and normalized attention scores.
+                These outputs are crucial for tasks that involve understanding relationships in graph-structured data.
+            </p>
+        </div>
+        <div id="controller_brain" class="content">
+            <h2>Controller Brain</h2>
+            <p>This file defines the <code>ControllerBrain</code> class, which orchestrates the operations for training
+                and evaluating machine learning models in the Smartville project. It integrates various neural modules
+                for classification, manages replay buffers for experience learning, and tracks performance metrics using
+                the WandB tracking service.</p>
+
+            <h3>Class: ControllerBrain</h3>
+            <p>The <code>ControllerBrain</code> class is the core component responsible for handling the flow of data,
+                managing model training and evaluation, and interfacing with Grafana and Prometheus for visualization.
+            </p>
+            <pre><code>
+    class ControllerBrain:
+        def __init__(self,
+                     eval,
+                     use_packet_feats,
+                     use_node_feats,
+                     flow_feat_dim,
+                     packet_feat_dim,
+                     h_dim,
+                     dropout,
+                     multi_class,
+                     k_shot,
+                     replay_buffer_batch_size,
+                     kernel_regression,
+                     device='cpu',
+                     seed=777,
+                     debug=False,
+                     wb_track=False,
+                     wb_project_name='',
+                     wb_run_name='',
+                     **wb_config_dict):
+            ...
+        </code></pre>
+            <p><strong>Methods:</strong></p>
+            <ul>
+                <li><code>__init__(self, eval, use_packet_feats, use_node_feats, flow_feat_dim, packet_feat_dim, h_dim, dropout, multi_class, k_shot, replay_buffer_batch_size, kernel_regression, device='cpu', seed=777, debug=False, wb_track=False, wb_project_name='', wb_run_name='', **wb_config_dict)</code>:
+                    Initializes the controller with various configuration parameters.</li>
+            </ul>
+
+            <h3>Method: add_replay_buffer</h3>
+            <p>This method adds a new replay buffer to the ControllerBrain instance for a specific class.</p>
+            <pre><code>
+    def add_replay_buffer(self, class_name):
+        self.inference_allowed = False
+        self.experience_learning_allowed = False
+        self.eval_allowed = False
+        if self.AI_DEBUG:
+            self.logger_instance.info(f'Adding a replay buffer with code {self.current_known_classes_count-1}')
+            self.logger_instance.info(f'Encoder state mapping: {self.encoder.get_mapping()}')
+        
+        if not 'G2' in class_name:
+            self.replay_buffers[self.current_known_classes_count-1] = ReplayBuffer(
+                capacity=REPLAY_BUFFER_MAX_CAPACITY,
+                batch_size=self.replay_buff_batch_size,
+                seed=self.seed)
+        if not 'G1' in class_name:
+            self.test_replay_buffers[self.current_known_classes_count-1] = ReplayBuffer(
+                        capacity=REPLAY_BUFFER_MAX_CAPACITY,
+                        batch_size=self.replay_buff_batch_size,
+                        seed=self.seed)
+        </code></pre>
+            <p><strong>Methods:</strong></p>
+            <ul>
+                <li><code>add_replay_buffer(self, class_name)</code>: Adds a replay buffer for a specific class.</li>
+            </ul>
+
+            <h3>Method: add_class_to_knowledge_base</h3>
+            <p>This method adds a new class to the knowledge base, updating the current known classes count and replay
+                buffers.</p>
+            <pre><code>
+    def add_class_to_knowledge_base(self, new_class):
+        if self.AI_DEBUG:
+            self.logger_instance.info(f'New class found: {new_class}')
+        self.current_known_classes_count += 1
+        if not 'G2' in new_class:
+            self.current_training_known_classes_count += 1 
+        if not 'G1' in new_class:
+            self.current_test_known_classes_count += 1
+        self.add_replay_buffer(new_class)
+        self.reset_train_cms()
+        self.reset_test_cms()
+        </code></pre>
+            <p><strong>Methods:</strong></p>
+            <ul>
+                <li><code>add_class_to_knowledge_base(self, new_class)</code>: Adds a new class to the knowledge base
+                    and initializes the corresponding replay buffers.</li>
+            </ul>
+
+            <h3>Method: reset_train_cms</h3>
+            <p>This method resets the confusion matrices used for training classification.</p>
+            <pre><code>
+    def reset_train_cms(self):
+        self.training_cs_cm = torch.zeros(
+            [self.current_known_classes_count, self.current_known_classes_count],
+            device=self.device)
+        self.training_os_cm = torch.zeros(
+            size=(2, 2),
+            device=self.device)
+        </code></pre>
+            <p><strong>Methods:</strong></p>
+            <ul>
+                <li><code>reset_train_cms(self)</code>: Resets the training confusion matrices.</li>
+            </ul>
+
+            <h3>Method: reset_test_cms</h3>
+            <p>This method resets the confusion matrices used for testing classification.</p>
+            <pre><code>
+    def reset_test_cms(self):
+        self.eval_cs_cm = torch.zeros(
+            [self.current_known_classes_count, self.current_known_classes_count],
+            device=self.device)
+        self.eval_os_cm = torch.zeros(
+            size=(2, 2),
+            device=self.device)
+        </code></pre>
+            <p><strong>Methods:</strong></p>
+            <ul>
+                <li><code>reset_test_cms(self)</code>: Resets the testing confusion matrices.</li>
+            </ul>
+
+            <h3>Method: init_neural_modules</h3>
+            <p>This method initializes the neural modules required for the classification tasks, such as the confidence
+                decoder and the classifier models.</p>
+            <pre><code>
+    def init_neural_modules(self, lr, seed):
+        torch.manual_seed(seed)
+        self.confidence_decoder = ConfidenceDecoder(device=self.device)
+        self.os_criterion = nn.BCEWithLogitsLoss().to(self.device)
+        self.cs_criterion = nn.CrossEntropyLoss().to(self.device)
+        self.kr_criterion = KernelRegressionLoss(repulsive_weigth=REPULSIVE_WEIGHT, 
+            attractive_weigth=ATTRACTIVE_WEIGHT).to(self.device)
+        ...
+        self.check_pretrained()
+        ...
+        if self.eval:
+            self.classifier.eval()
+            self.confidence_decoder.eval()
+            self.logger_instance.info(f"Using MODULES in EVAL mode!")
+        </code></pre>
+            <p><strong>Methods:</strong></p>
+            <ul>
+                <li><code>init_neural_modules(self, lr, seed)</code>: Initializes the neural network modules used in the
+                    controller.</li>
+            </ul>
+
+            <h3>Method: check_pretrained</h3>
+            <p>This method checks if there are pretrained models available and loads them if they exist.</p>
+            <pre><code>
+    def check_pretrained(self):
+        if self.use_packet_feats:
+            if self.use_node_feats:
+                self.classifier_path = PRETRAINED_MODELS_DIR+'multiclass_flow_packet_node_classifier_pretrained'
+                self.confidence_decoder_path = PRETRAINED_MODELS_DIR+'flow_packet_node_confidence_decoder_pretrained'
+            else:
+                self.classifier_path = PRETRAINED_MODELS_DIR+'multiclass_flow_packet_classifier_pretrained'
+                self.confidence_decoder_path = PRETRAINED_MODELS_DIR+'flow_packet_confidence_decoder_pretrained'
+        else:
+            if self.use_node_feats:
+                self.classifier_path = PRETRAINED_MODELS_DIR+'multiclass_flow_node_classifier_pretrained'
+                self.confidence_decoder_path = PRETRAINED_MODELS_DIR+'flow_node_confidence_decoder_pretrained'
+            else:    
+                self.classifier_path = PRETRAINED_MODELS_DIR+'multiclass_flow_classifier_pretrained'
+                self.confidence_decoder_path = PRETRAINED_MODELS_DIR+'flow_confidence_decoder_pretrained'
+    
+        if os.path.exists(PRETRAINED_MODELS_DIR):
+            ...
+        </code></pre>
+            <p><strong>Methods:</strong></p>
+            <ul>
+                <li><code>check_pretrained(self)</code>: Checks and loads pretrained models if available.</li>
+            </ul>
+
+            <h3>Method: infer</h3>
+            <p>This method performs inference on a batch of input data using the initialized neural models.</p>
+            <pre><code>
+    def infer(self, flow_input_batch, packet_input_batch, node_feat_input_batch, batch_labels, query_mask):
+        if self.use_packet_feats:
+            if self.use_node_feats:
+                logits, hiddens, predicted_kernel = self.classifier(
+                    flow_input_batch, 
+                    packet_input_batch, 
+                    node_feat_input_batch,
+                    batch_labels, 
+                    self.current_known_classes_count,
+                    query_mask)
+            ...
+        return logits, hiddens, predicted_kernel
+        </code></pre>
+            <p><strong>Methods:</strong></p>
+            <ul>
+                <li><code>infer(self, flow_input_batch, packet_input_batch, node_feat_input_batch, batch_labels, query_mask)</code>:
+                    Runs inference on the input batch and returns the logits, hidden vectors, and predicted kernel.</li>
+            </ul>
+
+            <h3>Method: experience_learning</h3>
+            <p>This method performs experience learning by sampling from replay buffers and updating the model based on
+                the training data.</p>
+            <pre><code>
+    def experience_learning(self):
+        balanced_flow_batch, \
+            balanced_packet_batch, \
+                balanced_node_feat_batch, \
+                    balanced_labels, \
+                        balanced_zda_labels, \                        balanced_test_zda_labels = self.sample_from_replay_buffers(
+                            samples_per_class=self.replay_buff_batch_size,
+                            mode=TRAINING)
+    
+    query_mask = self.get_canonical_query_mask(TRAINING)
+    assert query_mask.shape[0] == balanced_labels.shape[0]
+
+    logits, hidden_vectors, predicted_kernel = self.infer(
+        flow_input_batch=balanced_flow_batch,
+        packet_input_batch=balanced_packet_batch,
+        node_feat_input_batch=balanced_node_feat_batch,
+        batch_labels=balanced_labels,
+        query_mask=query_mask)
+
+    loss = 0
+
+    one_hot_labels = self.get_oh_labels(
+        curr_shape=(balanced_labels.shape[0], logits.shape[1]), 
+        targets=balanced_labels)
+
+    known_oh_labels = one_hot_labels[~balanced_zda_labels.squeeze(1).bool()]
+    known_class_h_mask = known_oh_labels.sum(0) > 0
+
+    kr_loss, predicted_clusters, _ = self.kernel_regression_step(
+        predicted_kernel, 
+        one_hot_labels, 
+        TRAINING)
+
+    if REGULARIZATION:
+        loss += kr_loss
+
+    if self.multi_class:
+        ad_loss, _ = self.AD_step(
+            zda_labels=balanced_zda_labels, 
+            preds=logits[:, known_class_h_mask], 
+            query_mask=query_mask,
+            mode=TRAINING)
+        loss += ad_loss
+
+    self.training_cs_cm += efficient_cm(
+        preds=logits.detach(),
+        targets_onehot=one_hot_labels[query_mask])
+
+    if self.backprop_counter % REPORT_STEP_FREQUENCY == 0:
+        self.report(
+            preds=logits[:, known_class_h_mask],  
+            hiddens=hidden_vectors.detach(), 
+            labels=balanced_labels,
+            predicted_clusters=predicted_clusters, 
+            query_mask=query_mask,
+            phase=TRAINING)
+
+        if self.eval_allowed:
+            self.evaluate_models()
+
+    cs_acc = self.learning_step(balanced_labels, logits, TRAINING, query_mask, loss)
+    
+    if self.AI_DEBUG: 
+        self.logger_instance.info(f'{TRAINING} batch labels mean: {balanced_labels.to(torch.float16).mean().item()} '+\
+                                  f'{TRAINING} batch prediction mean: {logits.max(1)[1].to(torch.float32).mean()}')
+        self.logger_instance.info(f'{TRAINING} mean multiclass classif accuracy: {cs_acc}')
+    </code></pre>
+            <p><strong>Methods:</strong></p>
+            <ul>
+                <li><code>experience_learning(self)</code>: Samples from replay buffers, performs learning steps, and
+                    updates the model.</li>
+            </ul>
+
+            <h3>Method: evaluate_models</h3>
+            <p>This method evaluates the models by running inference on samples from replay buffers, and calculates
+                evaluation metrics.</p>
+            <pre><code>
+def evaluate_models(self):
+    self.classifier.eval()
+    self.confidence_decoder.eval()
+    
+    mean_eval_ad_acc = 0
+    mean_eval_cs_acc = 0
+    mean_eval_kr_ari = 0
+
+    for _ in range(EVALUATION_ROUNDS):
+        balanced_flow_batch, \
+            balanced_packet_batch, \
+                balanced_node_feat_batch, \
+                    balanced_labels, \
+                        balanced_zda_labels, \
+                            balanced_test_zda_labels = self.sample_from_replay_buffers(
+                                samples_per_class=self.replay_buff_batch_size,
+                                mode=INFERENCE)
+        
+        query_mask = self.get_canonical_query_mask(INFERENCE)
+        assert query_mask.shape[0] == balanced_labels.shape[0]
+
+        logits, hidden_vectors, predicted_kernel = self.infer(
+            flow_input_batch=balanced_flow_batch,
+            packet_input_batch=balanced_packet_batch,
+            node_feat_input_batch=balanced_node_feat_batch,
+            batch_labels=balanced_labels,
+            query_mask=query_mask)
+
+        one_hot_labels = self.get_oh_labels(
+            curr_shape=(balanced_labels.shape[0], logits.shape[1]), 
+            targets=balanced_labels)
+        
+        known_oh_labels = one_hot_labels[~balanced_zda_labels.squeeze(1).bool()]
+        known_class_h_mask = known_oh_labels.sum(0) > 0
+
+        _, predicted_clusters, kr_precision = self.kernel_regression_step(
+            predicted_kernel, 
+            one_hot_labels,
+            INFERENCE)
+
+        _, ad_acc = self.AD_step(
+            zda_labels=balanced_zda_labels, 
+            preds=logits[:, known_class_h_mask], 
+            query_mask=query_mask,
+            mode=INFERENCE)
+
+        self.eval_cs_cm += efficient_cm(
+            preds=logits.detach(),
+            targets_onehot=one_hot_labels[query_mask])
+        
+        cs_acc = self.learning_step(balanced_labels, logits, INFERENCE, query_mask)
+
+        mean_eval_ad_acc += (ad_acc / EVALUATION_ROUNDS)
+        mean_eval_cs_acc += (cs_acc / EVALUATION_ROUNDS)
+        mean_eval_kr_ari += (kr_precision / EVALUATION_ROUNDS)
+
+    if self.AI_DEBUG: 
+        self.logger_instance.info(f'{INFERENCE} mean eval AD accuracy: {mean_eval_ad_acc.item()} '+\
+                                f'{INFERENCE} mean eval CS accuracy: {mean_eval_cs_acc.item()}')
+        self.logger_instance.info(f'{INFERENCE} mean eval KR accuracy: {mean_eval_kr_ari}')
+    if self.wbt:
+        self.wbl.log({'Mean EVAL AD ACC': mean_eval_ad_acc.item(), STEP_LABEL:self.backprop_counter})
+        self.wbl.log({'Mean EVAL CS ACC': mean_eval_cs_acc.item(), STEP_LABEL:self.backprop_counter})
+        self.wbl.log({'Mean EVAL KR PREC': mean_eval_kr_ari, STEP_LABEL:self.backprop_counter})
+
+    if not self.eval:
+        self.check_kr_progress(curr_kr_acc=mean_eval_kr_ari)
+        self.check_cs_progress(curr_cs_acc=mean_eval_cs_acc.item())
+        self.check_AD_progress(curr_ad_acc=mean_eval_ad_acc.item())
+
+    self.report(
+            preds=logits[:, known_class_h_mask], 
+            hiddens=hidden_vectors.detach(), 
+            labels=balanced_labels,
+            predicted_clusters=predicted_clusters, 
+            query_mask=query_mask,
+            phase=INFERENCE)
+
+    self.classifier.train()
+    self.confidence_decoder.train()
+    </code></pre>
+            <p><strong>Methods:</strong></p>
+            <ul>
+                <li><code>evaluate_models(self)</code>: Evaluates the models on test data, updates metrics, and adjusts
+                    training if necessary.</li>
+            </ul>
+
+            <h3>Method: report</h3>
+            <p>This method generates reports, including confusion matrices and latent space visualizations, and logs
+                them to WandB.</p>
+            <pre><code>
+def report(self, preds, hiddens, labels, predicted_clusters, query_mask, phase):
+    if phase == TRAINING:
+        cs_cm_to_plot = self.training_cs_cm
+        os_cm_to_plot = self.training_os_cm
+    elif phase == INFERENCE:
+        cs_cm_to_plot = self.eval_cs_cm
+        os_cm_to_plot = self.eval_os_cm
+
+    if self.wbt:
+        self.plot_confusion_matrix(
+            mod=CLOSED_SET,
+            cm=cs_cm_to_plot,
+            phase=phase,
+            norm=False,
+            classes=self.encoder.get_labels())
+        self.plot_confusion_matrix(
+            mod=ANOMALY_DETECTION,
+            cm=os_cm_to_plot,
+            phase=phase,
+            norm=False,
+            classes=['Known', 'ZdA'])
+        self.plot_hidden_space(hiddens=hiddens, labels=labels, predicted_labels=predicted_clusters, phase=phase)
+        self.plot_scores_vectors(score_vectors=preds, labels=labels[query_mask], phase=phase)
+
+    if self.AI_DEBUG:
+        self.logger_instance.info(f'{phase} CS Conf matrix: \n {cs_cm_to_plot}')
+        self.logger_instance.info(f'{phase} AD Conf matrix: \n {os_cm_to_plot}')
+    
+    if phase == TRAINING:
+        self.reset_train_cms()
+    elif phase == INFERENCE:
+        self.reset_test_cms()
+    </code></pre>
+            <p><strong>Methods:</strong></p>
+            <ul>
+                <li><code>report(self, preds, hiddens, labels, predicted_clusters, query_mask, phase)</code>: Generates
+                    and logs various reports, including confusion matrices and visualizations of hidden spaces.</li>
+            </ul>
+
+            <h3>Method: save_models</h3>
+            <p>This method saves the models' state dictionaries to files.</p>
+            <pre><code>
+def save_models(self):
+    self.save_cs_model(postfix='coupled')
+    if self.multi_class:
+        self.save_ad_model(postfix='coupled')
+    </code></pre>
+            <p><strong>Methods:</strong></p>
+            <ul>
+                <li><code>save_models(self)</code>: Saves the state dictionaries of the models to files.</li>
+            </ul>
+
+            <h3>Method: learning_step</h3>
+            <p>This method performs a single learning step, including loss calculation, backpropagation, and
+                optimization.</p>
+            <pre><code>
+def learning_step(self, labels, predictions, mode, query_mask, prev_loss=0):
+    cs_loss = self.cs_criterion(input=predictions,
+                                target=labels[query_mask].squeeze(1))
+
+    if mode == TRAINING:
+        loss = prev_loss + cs_loss
+        # backward pass
+        self.cs_optimizer.zero_grad()
+        loss.backward()
+        # update weights
+        self.cs_optimizer.step()
+
+    # compute accuracy
+    acc = self.get_accuracy(logits_preds=predictions, decimal_labels=labels, query_mask=query_mask)
+
+    # report progress
+    if self.wbt:
+        self.wbl.log({mode+'_'+CS_ACC: acc.item(), STEP_LABEL:self.backprop_counter})
+        self.wbl.log({mode+'_'+CS_LOSS: cs_loss.item(), STEP_LABEL:self.backprop_counter})
+
+    return acc
+    </code></pre>
+            <p><strong>Methods:</strong></p>
+            <ul>
+                <li><code>learning_step(self, labels, predictions, mode, query_mask, prev_loss=0)</code>: Performs a
+                    learning step, including backpropagation and logging.</li>
+            </ul>
+
+            <h3>Method: get_accuracy</h3>
+            <p>This method calculates the accuracy of predictions against the ground truth labels.</p>
+            <pre><code>
+def get_accuracy(self, logits_preds, decimal_labels, query_mask):
+    match_mask = logits_preds.max(1)[1] == decimal_labels.max(1)[0][query_mask]
+    return match_mask.sum() / match_mask.shape[0]
+    </code></pre>
+            <p><strong>Methods:</strong></p>
+            <ul>
+                <li><code>get_accuracy(self, logits_preds, decimal_labels, query_mask)</code>: Computes the accuracy of
+                    the model predictions.</li>
+            </ul>
+        </div>
+        <div id="graph_generator" class="content">
+            <h2>Graph Generator Class</h2>
+            <p>This class is responsible for generating and organizing various graphs in a Grafana dashboard for
+                interactive visualization. It connects to a Grafana host using an API key and to a Prometheus instance
+                to fetch metrics data.</p>
+
+            <h3>Class: GraphGenerator</h3>
+            <p>The <code>GraphGenerator</code> class handles the generation and organization of graphs on a Grafana
+                dashboard.</p>
+            <pre><code>
+    class GraphGenerator:
+        def __init__(self, grafana_connection, prometheus_connection):
+            self.num_panels = 0
+            self.grafana_connection = grafana_connection
+            self.prometheus_connection = prometheus_connection
+        </code></pre>
+
+            <h4>Method: __init__</h4>
+            <p>This constructor initializes the <code>GraphGenerator</code> class with connections to Grafana and
+                Prometheus.</p>
+            <p><strong>Description:</strong>
+                The <code>__init__</code> method sets up the connection to Grafana and Prometheus and initializes the
+                counter for the number of panels on the Grafana dashboard.
+            </p>
+
+            <h3>Method: generate_all_graphs</h3>
+            <p>The <code>generate_all_graphs</code> method generates the graphs for CPU, RAM, PING, Incoming, and
+                Outcoming network data if they do not already exist on the dashboard.</p>
+            <pre><code>
+    def generate_all_graphs(self, panel_title):
+        if not self.graph_exists('CPU_data', panel_title):
+            self.generate_graph('CPU_data', panel_title, 'CPU_percentage', 'semi-dark-yellow')
+    
+        if not self.graph_exists('RAM_data', panel_title):
+            self.generate_graph('RAM_data', panel_title, 'RAM_GB', '#315b2b')
+    
+        if not self.graph_exists('PING_data', panel_title):
+            self.generate_graph('PING_data', panel_title, 'Latenza_ms', '#00e674')
+    
+        if not self.graph_exists('INT_data', panel_title):
+            self.generate_graph('INT_data', panel_title, 'Incoming_network_KB', '#00bcff')
+    
+        if not self.graph_exists('ONT_data', panel_title):
+            self.generate_graph('ONT_data', panel_title, 'Outcoming_network_KB', '#0037ff')
+        </code></pre>
+
+            <h4>Method: generate_all_graphs</h4>
+            <p>This method checks if certain graphs are already present on the Grafana dashboard and creates them if
+                they are not.</p>
+            <p><strong>Description:</strong>
+                The <code>generate_all_graphs</code> method ensures that specific metrics (CPU, RAM, PING, network data)
+                are represented as graphs on the Grafana dashboard. If any of these graphs are missing, it generates
+                them.
+            </p>
+
+            <h3>Method: graph_exists</h3>
+            <p>The <code>graph_exists</code> method checks if a graph with a specific title already exists on the
+                Grafana dashboard.</p>
+            <pre><code>
+    def graph_exists(self, dash_UID, panel_title):
+        dashboard = self.grafana_connection.dashboard.get_dashboard(dash_UID)
+        panel_titles = [panel['title'] for panel in dashboard['dashboard']['panels']]
+        self.num_panels = len(panel_titles)
+        
+        return panel_title in panel_titles
+        </code></pre>
+
+            <h4>Method: graph_exists</h4>
+            <p>This method determines if a specific graph is already present on the dashboard.</p>
+            <p><strong>Description:</strong>
+                The <code>graph_exists</code> method checks the current panels on the dashboard to see if a graph with
+                the specified title already exists. This helps to avoid creating duplicate graphs.
+            </p>
+
+            <h3>Method: generate_graph</h3>
+            <p>The <code>generate_graph</code> method creates and adds a new graph to the Grafana dashboard based on
+                specified metrics and configurations.</p>
+            <pre><code>
+    def generate_graph(self, dash_UID, panel_title, metric, colortab):
+        panel_config = {
+            "type": "timeseries",
+            "title": f"{panel_title}",
+            "uid": f"{panel_title}",
+            "datasource": "prometheus",
+            "transparent": True,
+            "fieldConfig": {...},
+            "gridPos": {
+                "h": 6,
+                "w": 8,
+                "x": (self.num_panels % 3) * 8,
+                "y": 0
+            },
+            "id": None,
+            "options": {...},
+            "targets": [
+                {
+                    "datasource": "prometheus",
+                    "expr": f'{metric}{{label_name="{panel_title}"}}',
+                }
+            ]
+        }
+    
+        dashboard = self.grafana_connection.dashboard.get_dashboard(dash_UID)
+        if dashboard is not None:
+            dashboard['dashboard']['panels'].append(panel_config)
+            self.grafana_connection.dashboard.update_dashboard(dashboard)
+        </code></pre>
+
+            <h4>Method: generate_graph</h4>
+            <p>This method generates a new graph and adds it to the Grafana dashboard.</p>
+            <p><strong>Description:</strong>
+                The <code>generate_graph</code> method defines the graph configuration, including its type, title, data
+                source, and appearance. It then adds the graph to the specified Grafana dashboard.
+            </p>
+
+            <h3>Method: sort_all_graphs</h3>
+            <p>The <code>sort_all_graphs</code> method reorganizes all the graphs on the Grafana dashboard, prioritizing
+                those with higher values.</p>
+            <pre><code>
+    def sort_all_graphs(self):
+        self.sort_single_graph('CPU_data')
+        self.sort_single_graph('RAM_data')
+        self.sort_single_graph('PING_data')
+        self.sort_single_graph('INT_data')
+        self.sort_single_graph('ONT_data')
+        </code></pre>
+
+            <h4>Method: sort_all_graphs</h4>
+            <p>This method sorts all the graphs on the dashboard so that those with higher metrics appear at the top.
+            </p>
+            <p><strong>Description:</strong>
+                The <code>sort_all_graphs</code> method calls the sorting function for each type of metric graph,
+                arranging them in descending order based on their values.
+            </p>
+
+            <h3>Method: sort_single_graph</h3>
+            <p>The <code>sort_single_graph</code> method repositions a single graph on the dashboard based on its
+                metrics.</p>
+            <pre><code>
+    def sort_single_graph(self, dash_UID):
+        dashboard_config = self.grafana_connection.dashboard.get_dashboard(dash_UID)
+        panels = dashboard_config['dashboard']['panels']
+    
+        for panel in panels:
+            targets = panel.get('targets', [])
+            if targets:
+                prometheus_expr = targets[0].get('expr')
+                prometheus_expr_range = f"{prometheus_expr}[1m]"
+                try:
+                    metric_data_range = self.prometheus_connection.custom_query(query=prometheus_expr_range)                    
+                except PrometheusApiClientException as e:
+                    return
+                sum_value = sum([float(point[1]) for point in metric_data_range[0].get('values', []) if point and len(point) > 1])
+    
+                panel['sum_value'] = sum_value
+    
+        sorted_panels = sorted(panels, key=lambda x: x.get('sum_value', 0), reverse=True)
+    
+        for i, panel in enumerate(sorted_panels):
+            panel['gridPos'] = {
+                "h": 6,
+                "w": 8,
+                "x": (i % 3) * 8,
+                "y": 0
+            }
+    
+        dashboard_config['dashboard']['panels'] = sorted_panels
+        self.grafana_connection.dashboard.update_dashboard(dashboard_config)
+        </code></pre>
+
+            <h4>Method: sort_single_graph</h4>
+            <p>This method sorts a single graph based on its metric values and repositions it on the dashboard.</p>
+            <p><strong>Description:</strong>
+                The <code>sort_single_graph</code> method calculates the sum of the metric values for a graph, sorts the
+                graphs in descending order based on these sums, and updates their positions on the dashboard.
+            </p>
+        </div>
+        <div id="consumer_thread" class="content">
+            <h2>Smartville Kafka Consumer</h2>
+            <p>This file is part of the "Smartville" project and defines a set of classes and methods for managing and
+                monitoring data through a Kafka server. The primary class, <code>ConsumerThread</code>, is responsible
+                for consuming data from Kafka, updating system metrics such as CPU, RAM, latency, and network traffic,
+                and interacting with the Kafka server. The project is distributed under the Apache 2.0 license.</p>
+
+            <h3>Class: ConsumerThread</h3>
+            <p>The <code>ConsumerThread</code> class extends <code>threading.Thread</code> and handles the consumption
+                of messages from a Kafka topic, updating various system metrics based on the received data.</p>
+
+            <h4>Method: __init__</h4>
+            <p>This constructor method initializes the <code>ConsumerThread</code> with the necessary configurations.
+            </p>
+            <pre><code>
+    def __init__(self, bootstrap_servers, topic_name, topic_object, cpu_metric, ram_metric, ping_metric, incoming_traffic_metric, outcoming_traffic_metric, controller_metrics_dict):
+        threading.Thread.__init__(self)
+        self.lock = threading.Lock()
+        self.bootstrap_servers = bootstrap_servers
+        self.topic_name = topic_name
+        self.topic_object = topic_object
+        self.cpu_metric = cpu_metric
+        self.ram_metric = ram_metric
+        self.ping_metric = ping_metric
+        self.incoming_traffic_metric = incoming_traffic_metric
+        self.outcoming_traffic_metric = outcoming_traffic_metric
+        self.exit_signal = threading.Event()
+        self.controller_metrics_dict = controller_metrics_dict
+        </code></pre>
+            <p><strong>Description:</strong>
+                This method sets up the necessary components for the thread, including Kafka server connection details,
+                the topic to subscribe to, and the metrics to update. It also initializes a threading lock for
+                synchronizing access to shared resources and an event to signal the thread's termination.
+            </p>
+
+            <h4>Method: update_cpu_metric</h4>
+            <p>This method updates the CPU metric based on the received value.</p>
+            <pre><code>
+    def update_cpu_metric(self, value, label_value):
+        self.cpu_metric.labels(label_name=label_value).set(value)
+        with self.lock:
+            if value == b'nan' or math.isnan(value):
+                value = -1.0
+            self.controller_metrics_dict[self.topic_name]['CPU'].append(value)
+        </code></pre>
+            <p><strong>Description:</strong>
+                This method sets the CPU metric to the received value using the <code>cpu_metric</code> object. If the
+                value is not a number (NaN), it replaces it with -1.0 to indicate an invalid reading. The value is then
+                appended to the controller's metrics dictionary under the CPU category, with access synchronized via a
+                lock.
+            </p>
+
+            <h4>Method: update_ram_metric</h4>
+            <p>This method updates the RAM metric based on the received value.</p>
+            <pre><code>
+    def update_ram_metric(self, value, label_value):
+        self.ram_metric.labels(label_name=label_value).set(value)
+        with self.lock:
+            if value == b'nan' or math.isnan(value):
+                value = -1.0
+            self.controller_metrics_dict[self.topic_name]['RAM'].append(value)
+        </code></pre>
+            <p><strong>Description:</strong>
+                Similar to <code>update_cpu_metric</code>, this method updates the RAM metric and handles invalid values
+                by setting them to -1.0. The updated value is stored in the controller's metrics dictionary under the
+                RAM category.
+            </p>
+
+            <h4>Method: update_ping_metric</h4>
+            <p>This method updates the latency (ping) metric based on the received value.</p>
+            <pre><code>
+    def update_ping_metric(self, value, label_value):
+        self.ping_metric.labels(label_name=label_value).set(value)
+        with self.lock:
+            if value == b'nan' or math.isnan(value):
+                value = -1.0
+            self.controller_metrics_dict[self.topic_name]['DELAY'].append(value)
+        </code></pre>
+            <p><strong>Description:</strong>
+                This method updates the latency metric (ping) for the system. If the received value is NaN, it replaces
+                it with -1.0. The value is then stored under the DELAY category in the metrics dictionary.
+            </p>
+
+            <h4>Method: update_incoming_traffic_metric</h4>
+            <p>This method updates the incoming network traffic metric based on the received value.</p>
+            <pre><code>
+    def update_incoming_traffic_metric(self, value, label_value):
+        self.incoming_traffic_metric.labels(label_name=label_value).set(value)
+        with self.lock:
+            if value == b'nan' or math.isnan(value):
+                value = -1.0
+            self.controller_metrics_dict[self.topic_name]['IN_TRAFFIC'].append(value)
+        </code></pre>
+            <p><strong>Description:</strong>
+                This method updates the incoming network traffic metric. It handles NaN values by replacing them with
+                -1.0 and appends the value to the metrics dictionary under the IN_TRAFFIC category.
+            </p>
+
+            <h4>Method: update_outcoming_traffic_metric</h4>
+            <p>This method updates the outgoing network traffic metric based on the received value.</p>
+            <pre><code>
+    def update_outcoming_traffic_metric(self, value, label_value):
+        self.outcoming_traffic_metric.labels(label_name=label_value).set(value)
+        with self.lock:
+            if value == b'nan' or math.isnan(value):
+                value = -1.0
+            self.controller_metrics_dict[self.topic_name]['OUT_TRAFFIC'].append(value)
+        </code></pre>
+            <p><strong>Description:</strong>
+                This method updates the outgoing network traffic metric. NaN values are handled by setting them to -1.0,
+                and the value is stored under the OUT_TRAFFIC category in the metrics dictionary.
+            </p>
+
+            <h4>Method: stop_threads</h4>
+            <p>This method stops the execution of the thread.</p>
+            <pre><code>
+    def stop_threads(self):
+        print("Stopping thread...")
+        self.exit_signal.set()
+        </code></pre>
+            <p><strong>Description:</strong>
+                This method sets an exit signal that stops the thread's execution, effectively signaling the thread to
+                terminate its process.
+            </p>
+
+            <h4>Method: run</h4>
+            <p>This method starts the execution of the thread, handling the Kafka message polling and updating metrics
+                accordingly.</p>
+            <pre><code>
+    def run(self):
+        consumer_conf = {'bootstrap.servers': self.bootstrap_servers, 'group.id': 'my-group'}
+        consumer = Consumer(consumer_conf)
+        conf = {'bootstrap.servers': self.bootstrap_servers}
+        admin_client = AdminClient(conf)
+        delete_ok = False
+        end_message = str(math.nan).encode('utf-8')
+        stopper = 0
+    
+        num_partitions = len(self.topic_object.partitions)
+        if num_partitions == 5:
+            consumer.subscribe([self.topic_name])
+    
+            try:
+                while not self.exit_signal.is_set():
+                    msg = consumer.poll(timeout=3)
+                    if msg is None:
+                        self.update_all_metrics_to_nan(end_message)
+                        stopper += 1
+                        if stopper >= 40:
+                            delete_ok = True
+                            break
+                    elif msg.error():
+                        if msg.error().code() == KafkaException._PARTITION_EOF:
+                            print(f'Partition {msg.partition()} terminated')
+                        else:
+                            print(f'Error: {msg.error()}')
+                            break
+                    else:
+                        self.process_message(msg)
+            finally:
+                if delete_ok:
+                    admin_client.delete_topics([self.topic_name])
+                print(f"{self.topic_name}: stopped thread")
+        else:
+            admin_client.delete_topics([self.topic_name])
+            print(f"topic {self.topic_name} did not register correctly")
+        </code></pre>
+            <p><strong>Description:</strong>
+                This method implements the main logic of the thread. It configures the Kafka consumer and subscribes to
+                the topic. The thread polls Kafka for messages, updates the relevant metrics, and checks for errors. If
+                no messages are received for a set period, it may trigger the deletion of the Kafka topic.
+            </p>
+
+            <h4>Method: process_message</h4>
+            <p>This method processes a Kafka message and updates the appropriate metric based on the message's
+                partition.</p>
+            <pre><code>
+    def process_message(self, msg):
+        partition_to_method = {
+            0: self.update_cpu_metric,
+            1: self.update_ram_metric,
+            2: self.update_ping_metric,
+            3: self.update_incoming_traffic_metric,
+            4: self.update_outcoming_traffic_metric
+        }
+        method = partition_to_method.get(msg.partition())
+        if method:
+            method(float(msg.value()), self.topic_name)
+        </code></pre>
+            <p><strong>Description:</strong>
+                This method maps each Kafka partition to a specific metric update method. When a message is received, it
+                determines which partition it came from and calls the corresponding method to update the relevant
+                metric.
+            </p>
+
+            <h4>Method: update_all_metrics_to_nan</h4>
+            <p>This helper method updates all metrics to NaN values.</p>
+            <pre><code>
+    def update_all_metrics_to_nan(self, end_message):
+        self.update_cpu_metric(end_message, self.topic_name)
+        self.update_ram_metric(end_message, self.topic_name)
+        self.update_ping_metric(end_message, self.topic_name)
+        self.update_incoming_traffic_metric(end_message, self.topic_name)
+        self.update_outcoming_traffic_metric(end_message, self.topic_name)
+        </code></pre>
+            <p><strong>Description:</strong>
+                This method is used when no messages are received, setting all metrics to NaN values to indicate a lack
+                of data.
+            </p>
+        </div>
+        <div id="smart_controller" class="content">
+            <h2>Smart L3 Switch</h2>
+            <p>This file defines a Smart Layer 3 (L3) switch as part of the "Smartville" project. It extends the
+                functionality of a traditional L3 learning switch by integrating intelligent mechanisms to manage
+                network traffic. The key features of this switch include handling ARP (Address Resolution Protocol) and
+                IP packets, maintaining a table that maps IP addresses to MAC addresses and switch ports, and optimizing
+                network flow using various techniques.</p>
+
+            <h3>Class: SmartSwitch</h3>
+            <p>The <code>SmartSwitch</code> class is responsible for managing network traffic by learning associations
+                between IP addresses, MAC addresses, and switch ports. It also handles ARP and IP packets to ensure
+                efficient traffic routing.</p>
+
+            <h4>Method: __init__</h4>
+            <p>This constructor initializes the <code>SmartSwitch</code> with parameters such as flow timeout, ARP
+                timeout, and buffering configurations.</p>
+            <p><strong>Description:</strong> The <code>__init__</code> method sets up the switch with essential
+                parameters and initializes timers for expiration handling and smart checks. It also prepares tables and
+                dictionaries to manage ARP entries and unprocessed flows.</p>
+            <pre><code>
+        def __init__ (
+            self, 
+            flow_logger, 
+            metrics_logger, 
+            brain,
+            use_node_feats: bool = False,
+            flow_idle_timeout: int = 10,
+            arp_timeout: int = 120,
+            max_buffered_packets:int = 5,
+            max_buffering_secs:int = 5,
+            arp_req_exp_secs:int = 4,
+            inference_freq_secs:int = 5):
+    
+            self.flow_idle_timeout = flow_idle_timeout
+            self.arp_timeout = arp_timeout
+            self.max_buffered_packets = max_buffered_packets
+            self.max_buffering_secs = max_buffering_secs
+            self.arp_req_exp_secs = arp_req_exp_secs
+    
+            self.use_node_feats = use_node_feats
+            self.recently_sent_ARPs = {}
+            self.unprocessed_flows = {}
+            self.arpTables = {}
+    
+            self.brain = brain
+    
+            self._expire_timer = Timer(5, self._handle_expiration, recurring=True)
+            self.smart_check_timer = Timer(inference_freq_secs, self.smart_check, recurring=True)
+    
+            self.flow_logger = flow_logger
+            self.metrics_logger = metrics_logger
+    
+            core.listen_to_dependencies(self)
+        </code></pre>
+
+            <h4>Method: smart_check</h4>
+            <p>This method periodically classifies network flows using machine learning models.</p>
+            <p><strong>Description:</strong> The <code>smart_check</code> method calls the classifier in the controller
+                brain to analyze and categorize network traffic, potentially using node features and flow data.</p>
+            <pre><code>
+        def smart_check(self):
+            if self.use_node_feats:
+                self.brain.classify_duet(
+                    flows=list(self.flow_logger.flows_dict.values()),
+                    node_feats=self.metrics_logger.metrics_dict)
+            else:
+                self.brain.classify_duet(
+                    flows=list(self.flow_logger.flows_dict.values()))
+        </code></pre>
+
+            <h4>Method: _handle_expiration</h4>
+            <p>This method removes outdated packets from the buffer and instructs the switch to drop them.</p>
+            <p><strong>Description:</strong> The <code>_handle_expiration</code> method checks the expiration of
+                buffered packets. If a packet is expired, it sends a message to the switch to drop that packet.</p>
+            <pre><code>
+        def _handle_expiration(self):
+            to_delete_flows = []
+    
+            for flow_metadata, packet_metadata_list in self.unprocessed_flows.items():
+                switch_id, _ = flow_metadata
+    
+                if len(packet_metadata_list) == 0:
+                    to_delete_flows.append(flow_metadata)
+                else: 
+                    for packet_metadata in list(packet_metadata_list):
+                        expires_at, packet_id, in_port, _ = packet_metadata
+    
+                        if expires_at < time.time():
+                            packet_metadata_list.remove(packet_metadata)
+                            po = of.ofp_packet_out(buffer_id=packet_id, in_port=in_port)
+                            core.openflow.sendToDPID(switch_id, po)
+    
+            for flow_metadata in to_delete_flows:
+                del self.unprocessed_flows[flow_metadata]
+        </code></pre>
+
+            <h4>Method: _send_unprocessed_flows</h4>
+            <p>This method attempts to resend buffered packets once the destination is known.</p>
+            <p><strong>Description:</strong> The <code>_send_unprocessed_flows</code> method checks if the destination
+                IP address and MAC address have been resolved. If so, it sends the buffered packets to their
+                destinations.</p>
+            <pre><code>
+        def _send_unprocessed_flows(self, switch_id, port, dest_mac_addr, dest_ip_addr):
+            query_tuple = (switch_id, dest_ip_addr)
+            if query_tuple in self.unprocessed_flows.keys():
+                bucket = self.unprocessed_flows[query_tuple]    
+                del self.unprocessed_flows[query_tuple]
+    
+                log.debug(f"Sending {len(bucket)} buffered packets to {dest_ip_addr}")
+    
+                for _, packet_id, in_port, _ in bucket:
+                    po = of.ofp_packet_out(buffer_id=packet_id, in_port=in_port)
+                    po.actions.append(of.ofp_action_dl_addr.set_dst(dest_mac_addr))
+                    po.actions.append(of.ofp_action_output(port=port))
+                    core.openflow.sendToDPID(switch_id, po)
+        </code></pre>
+
+            <h4>Method: delete_ip_flow_matching_rules</h4>
+            <p>This method deletes flow rules that match a specific destination IP address.</p>
+            <p><strong>Description:</strong> The <code>delete_ip_flow_matching_rules</code> method removes flow rules
+                from the switch that match a given destination IP address to prevent outdated routing.</p>
+            <pre><code>
+        def delete_ip_flow_matching_rules(self, dest_ip, connection):
+            switch_id = connection.dpid
+    
+            msg = of.ofp_flow_mod(command=of.OFPFC_DELETE)
+            msg.match.nw_dst = dest_ip
+            msg.match.dl_type = ethernet.IP_TYPE
+            connection.send(msg)
+    
+            log.info(f"Switch {switch_id} will delete flow rules matching nw_dst={dest_ip}")
+        </code></pre>
+
+            <h4>Method: learn_or_update_arp_table</h4>
+            <p>This method learns or updates ARP table entries for a given IP address, MAC address, and port.</p>
+            <p><strong>Description:</strong> The <code>learn_or_update_arp_table</code> method updates the ARP table
+                with new information about the network, including IP-to-MAC mappings and switch ports. It also deletes
+                any flow rules that are now outdated.</p>
+            <pre><code>
+        def learn_or_update_arp_table(
+            self, 
+            ip_addr,
+            mac_addr,
+            port, 
+            connection):
+    
+            switch_id = connection.dpid 
+    
+            if ip_addr in self.arpTables[switch_id] and \
+                self.arpTables[switch_id][ip_addr] != (port, mac_addr):
+    
+                self.delete_ip_flow_matching_rules(
+                    dest_ip=ip_addr,
+                    connection=connection)
+    
+            self.arpTables[switch_id][ip_addr] = Entry(
+                port=port, 
+                mac=mac_addr, 
+                ARP_TIMEOUT=self.arp_timeout)
+    
+            log.debug(f"Entry added/updated to switch {switch_id}'s internal arp table: (port:{port} ip:{ip_addr})")
+        </code></pre>
+
+            <h4>Method: add_ip_to_ip_flow_matching_rule</h4>
+            <p>This method adds a flow rule for an IP packet, specifying how it should be routed.</p>
+            <p><strong>Description:</strong> The <code>add_ip_to_ip_flow_matching_rule</code> method creates and
+                installs a flow rule in the switch that dictates how packets matching specific IP addresses should be
+                routed.</p>
+            <pre><code>
+        def add_ip_to_ip_flow_matching_rule(
+            self, 
+            switch_id,
+            source_ip_addr, 
+            dest_ip_addr, 
+            dest_mac_addr, 
+            outgoing_port,
+            connection,
+            packet_id,
+            type):
+    
+            actions = []
+            actions.append(of.ofp_action_dl_addr.set_dst(dest_mac_addr))
+            actions.append(of.ofp_action_output(port=outgoing_port))
+    
+            match = of.ofp_match(
+                dl_type=type, 
+                nw_src=source_ip_addr,
+                nw_dst=dest_ip_addr)
+    
+            msg = of.ofp_flow_mod(command=of.OFPFC_ADD,
+                                  idle_timeout=self.flow_idle_timeout,
+                                  hard_timeout=of.OFP_FLOW_PERMANENT,
+                                  buffer_id=packet_id,
+                                  actions=actions,
+                                  match=match)
+    
+            connection.send(msg.pack())
+    
+            log.debug(f"Added new flow rule to:{switch_id} match: {match} actions: {actions}")
+        </code></pre>
+
+            <h4>Method: build_and_send_ARP_request</h4>
+            <p>This method sends an ARP request to discover the MAC address associated with an IP address.</p>
+            <p><strong>Description:</strong> The <code>build_and_send_ARP_request</code> method constructs an ARP
+                request and broadcasts it to discover the MAC address for a given IP address.</p>
+            <pre><code>
+        def build_and_send_ARP_request(
+            self, 
+            switch_id, 
+            incomming_port,
+            source_mac_addr,
+            source_ip_addr,
+            dest_ip_addr,
+            connection):
+    
+            request = arp()
+            request.hwtype = request.HW_TYPE_ETHERNET
+            request.prototype = request.PROTO_TYPE_IP
+            request.hwlen = 6
+            request.protolen = request.protolen
+            request.opcode = request.REQUEST
+            request.hwdst = ETHER_BROADCAST
+            request.protodst = dest_ip_addr
+            request.hwsrc = source_mac_addr
+            request.protosrc = source_ip_addr
+            e = ethernet(type=ethernet.ARP_TYPE, src=source_mac_addr,
+                          dst=ETHER_BROADCAST)
+            e.set_payload(request)
+    
+            log.debug(f"{switch_id}'s port {incomming_port} ARPing for {dest_ip_addr} on behalf of {source_ip_addr}")
+    
+            msg = of.ofp_packet_out()
+            msg.data = e.pack()
+            msg.actions.append(of.ofp_action_output(port=of.OFPP_FLOOD))
+            msg.in_port = incomming_port
+            connection.send(msg)
+        </code></pre>
+
+            <h4>Method: add_unprocessed_packet</h4>
+            <p>This method buffers a packet when its destination is unknown, to be sent later.</p>
+            <p><strong>Description:</strong> The <code>add_unprocessed_packet</code> method stores packets in a buffer
+                when the destination MAC address is not yet known, allowing them to be forwarded once the destination is
+                resolved.</p>
+            <pre><code>
+        def add_unprocessed_packet(self, switch_id, dst_ip, port, src_ip, buffer_id):
+            tuple_key = (switch_id, dst_ip)
+            if tuple_key not in self.unprocessed_flows: 
+                self.unprocessed_flows[tuple_key] = []
+            packet_metadata_list = self.unprocessed_flows[tuple_key]
+            packet_metadata = (time.time() + self.max_buffering_secs, 
+                               buffer_id, 
+                               port,
+                               src_ip)
+            packet_metadata_list.append(packet_metadata)
+            while len(packet_metadata_list) > self.max_buffered_packets: 
+                del packet_metadata_list[0]
+        </code></pre>
+
+            <h4>Method: handle_unknown_ip_packet</h4>
+            <p>This method manages IP packets where the destination MAC address is unknown.</p>
+            <p><strong>Description:</strong> The <code>handle_unknown_ip_packet</code> method buffers the packet and
+                initiates an ARP request to determine the destination MAC address.</p>
+            <pre><code>
+        def handle_unknown_ip_packet(self, switch_id, incomming_port, packet_in_event):
+            packet = packet_in_event.parsed
+            source_mac_addr = packet.src
+            source_ip_addr = packet.next.srcip
+            dest_ip_addr = packet.next.dstip
+    
+            self.add_unprocessed_packet(switch_id=switch_id,
+                                        dst_ip=dest_ip_addr,
+                                        port=incomming_port,
+                                        src_ip=source_ip_addr,
+                                        buffer_id=packet_in_event.ofp.buffer_id)
+    
+            self.recently_sent_ARPs = {k:v for k, v in self.recently_sent_ARPs.items() if v > time.time()}
+    
+            if (switch_id, dest_ip_addr) in self.recently_sent_ARPs:
+                return
+    
+            self.recently_sent_ARPs[(switch_id, dest_ip_addr)] = time.time() + self.arp_req_exp_secs
+    
+            self.build_and_send_ARP_request(
+                switch_id, 
+                incomming_port,
+                source_mac_addr,
+                source_ip_addr,
+                dest_ip_addr,
+                connection=packet_in_event.connection)
+        </code></pre>
+
+            <h4>Method: try_creating_flow_rule</h4>
+            <p>This method attempts to create a flow rule for a given IP packet, ensuring correct routing.</p>
+            <p><strong>Description:</strong> The <code>try_creating_flow_rule</code> method checks if the destination IP
+                is known and creates a flow rule accordingly. If the destination is unknown, it handles the packet as an
+                unknown IP packet.</p>
+            <pre><code>
+        def try_creating_flow_rule(self, switch_id, incomming_port, packet_in_event):
+            packet = packet_in_event.parsed
+            source_ip_addr = packet.next.srcip
+            dest_ip_addr = packet.next.dstip
+    
+            if dest_ip_addr in self.arpTables[switch_id]:
+                outgoing_port = self.arpTables[switch_id][dest_ip_addr].port
+    
+                if outgoing_port != incomming_port:
+                    dest_mac_addr = self.arpTables[switch_id][dest_ip_addr].mac
+                    self.add_ip_to_ip_flow_matching_rule(
+                                        switch_id,
+                                        source_ip_addr, 
+                                        dest_ip_addr, 
+                                        dest_mac_addr, 
+                                        outgoing_port,
+                                        connection=packet_in_event.connection,
+                                        packet_id=packet_in_event.ofp.buffer_id,
+                                        type=packet.type)
+    
+            else:
+                self.handle_unknown_ip_packet(switch_id, incomming_port, packet_in_event)
+        </code></pre>
+
+            <h4>Method: handle_ipv4_packet_in</h4>
+            <p>This method processes incoming IPv4 packets and manages their routing.</p>
+            <p><strong>Description:</strong> The <code>handle_ipv4_packet_in</code> method updates the ARP table, sends
+                any buffered packets, and creates new flow rules if necessary.</p>
+            <pre><code>
+        def handle_ipv4_packet_in(self, switch_id, incomming_port, packet_in_event):
+            packet = packet_in_event.parsed
+    
+            log.debug("IPV4 DETECTED - SWITCH: %i ON PORT: %i IP SENDER: %s IP RECEIVER %s", 
+                      switch_id,
+                      incomming_port,
+                      packet.next.srcip,
+                      packet.next.dstip)
+    
+            create_flow_rule = self.flow_logger.cache_unprocessed_packets(
+               src_ip=packet.next.srcip,
+               dst_ip=packet.next.dstip,
+               packet=packet)
+    
+            self._send_unprocessed_flows(
+               switch_id, 
+               incomming_port, 
+               dest_mac_addr=packet.src,
+               dest_ip_addr=packet.next.srcip)
+    
+            self.learn_or_update_arp_table(ip_addr=packet.next.srcip,
+                                           mac_addr=packet.src,
+                                           port=incomming_port, 
+                                           connection=packet_in_event.connection)
+    
+            if create_flow_rule:
+                self.try_creating_flow_rule(switch_id, 
+                                            incomming_port, 
+                                            packet_in_event)
+        </code></pre>
+
+            <h4>Method: send_arp_response</h4>
+            <p>This method sends an ARP response back to the requesting device.</p>
+            <p><strong>Description:</strong> The <code>send_arp_response</code> method constructs and sends an ARP
+                response based on the information in the ARP table.</p>
+            <pre><code>
+        def send_arp_response(self, connection, l2_packet, l3_packet, outgoing_port):
+            switch_id = connection.dpid
+    
+            arp_response = arp()
+            arp_response.hwtype = l3_packet.hwtype
+            arp_response.prototype = l3_packet.prototype
+            arp_response.hwlen = l3_packet.hwlen
+            arp_response.protolen = l3_packet.protolen
+            arp_response.opcode = arp.REPLY
+            arp_response.hwdst = l3_packet.hwsrc
+            arp_response.protodst = l3_packet.protosrc
+            arp_response.protosrc = l3_packet.protodst
+            arp_response.hwsrc = self.arpTables[switch_id][l3_packet.protodst].mac
+    
+            ethernet_wrapper = ethernet(type=l2_packet.type, 
+                         src=dpid_to_mac(switch_id),
+                          dst=l3_packet.hwsrc)
+    
+            ethernet_wrapper.set_payload(arp_response)
+    
+            log.debug(f"ARP ANSWER from switch {switch_id}: ADDRESS:{arp_response.protosrc}")
+    
+            msg = of.ofp_packet_out()
+            msg.data = ethernet_wrapper.pack()
+            msg.actions.append(of.ofp_action_output(port=of.OFPP_IN_PORT))
+            msg.in_port = outgoing_port
+            connection.send(msg)
+        </code></pre>
+
+            <h4>Method: handle_arp_packet_in</h4>
+            <p>This method processes incoming ARP packets, handling requests and replies.</p>
+            <p><strong>Description:</strong> The <code>handle_arp_packet_in</code> method updates the ARP table with the
+                information from the ARP packet and either responds to the ARP request or floods the packet.</p>
+            <pre><code>
+        def handle_arp_packet_in(self, switch_id, incomming_port, packet_in_event):
+            packet = packet_in_event.parsed
+            inner_packet = packet.next
+    
+            arp_operation = ''
+            if inner_packet.opcode == arp.REQUEST: arp_operation = 'request'
+            elif inner_packet.opcode == arp.REPLY: arp_operation = 'reply'
+            else: arp_operation = 'op_' + str(inner_packet.opcode)
+    
+            log.debug(f"ARP {arp_operation} received: SWITCH: {switch_id} IN PORT:{incomming_port} ARP FROM: {inner_packet.protosrc} TO {inner_packet.protodst}")
+    
+            if inner_packet.prototype == arp.PROTO_TYPE_IP and \
+                inner_packet.hwtype == arp.HW_TYPE_ETHERNET and \
+                  inner_packet.protosrc != 0:
+    
+                self.learn_or_update_arp_table(ip_addr=inner_packet.protosrc,
+                                               mac_addr=packet.src,
+                                               port=incomming_port, 
+                                               connection=packet_in_event.connection)
+    
+                self._send_unprocessed_flows(
+                    switch_id, 
+                    incomming_port, 
+                    dest_mac_addr=packet.src,
+                    dest_ip_addr=inner_packet.protosrc)
+    
+                if inner_packet.opcode == arp.REQUEST and \
+                    inner_packet.protodst in self.arpTables[switch_id] and \
+                      not self.arpTables[switch_id][inner_packet.protodst].isExpired():
+    
+                    self.send_arp_response(connection=packet_in_event.connection,
+                                           l2_packet=packet,
+                                           l3_packet=inner_packet,
+                                           outgoing_port=incomming_port)
+    
+                    return
+    
+            log.debug(f"Flooding ARP {arp_operation} Switch: {switch_id} IN_PORT: {incomming_port} from:{inner_packet.protosrc} to:{inner_packet.protodst}")
+    
+            msg = of.ofp_packet_out(
+               in_port=incomming_port, 
+               data=packet_in_event.ofp,
+               action=of.ofp_action_output(port=of.OFPP_FLOOD))
+    
+            packet_in_event.connection.send(msg)
+        </code></pre>
+
+            <h4>Method: _handle_openflow_PacketIn</h4>
+            <p>This method processes incoming packets from the OpenFlow switch.</p>
+            <p><strong>Description:</strong> The <code>_handle_openflow_PacketIn</code> method determines the type of
+                packet (IPv4, ARP, etc.) and invokes the appropriate handler method to process it.</p>
+            <pre><code>
+        def _handle_openflow_PacketIn(self, event):
+            switch_id = event.connection.dpid
+            incomming_port = event.port
+            packet = event.parsed
+    
+            if not packet.parsed:
+                log.warning(f"switch {switch_id}, port {incomming_port}: ignoring unparsed packet")
+                return
+    
+            if switch_id not in self.arpTables:
+                log.info(f"New switch detected - creating empty flow table with id {switch_id}")
+                self.arpTables[switch_id] = {}
+    
+            if packet.type == ethernet.LLDP_TYPE:
+                return
+    
+            if isinstance(packet.next, ipv4):
+                self.handle_ipv4_packet_in(
+                  switch_id=switch_id,
+                  incomming_port=incomming_port,
+                  packet_in_event=event)
+    
+            elif isinstance(packet.next, arp):
+                self.handle_arp_packet_in(
+                  switch_id=switch_id,
+                  incomming_port=incomming_port,
+                  packet_in_event=event)
+        </code></pre>
+        </div>
+        <div id="ai" class="content">
+            <h2>AI Script for Attack Mitigation</h2>
+            <p>This script is a part of the Smartville project and is responsible for simulating an AI-based
+                decision-making process that determines whether to mitigate an attack on a specific network port. If the
+                AI decides to mitigate, it blocks traffic on that port by sending a flow modification to the OpenFlow
+                switch.</p>
+
+            <h3>Function: ai_placeholder</h3>
+            <p>The <code>ai_placeholder</code> function simulates an AI decision-making process that determines whether
+                to mitigate an attack on a specific network port.</p>
+            <pre><code>
+    def ai_placeholder(packetlist, port):
+        log.info(f"AI: RECEIVED {len(packetlist)} PACKETS FOR PORT: {port}")
+        choose = random.choice([True, False])
+        log.info(f"AI: I HAVE CHOSEN: {choose} FOR PORT: {port}")
+        if choose:
+            mitigate_attack(port)
+        </code></pre>
+
+            <h4>Method: ai_placeholder</h4>
+            <p>This function receives a list of packets and a port number, then simulates an AI decision on whether to
+                mitigate an attack.</p>
+            <p><strong>Description:</strong>
+                The <code>ai_placeholder</code> function logs the number of packets received for a specific port. It
+                then randomly decides (simulating AI) whether to mitigate an attack on that port. If the decision is to
+                mitigate, it calls the <code>mitigate_attack</code> function.
+            </p>
+
+            <h3>Function: mitigate_attack</h3>
+            <p>The <code>mitigate_attack</code> function takes action to mitigate a suspected attack by blocking traffic
+                on the specified port.</p>
+            <pre><code>
+    def mitigate_attack(port):
+        block_traffic(port)
+        </code></pre>
+
+            <h4>Method: mitigate_attack</h4>
+            <p>This function calls another function to block traffic on the specified port.</p>
+            <p><strong>Description:</strong>
+                The <code>mitigate_attack</code> function is responsible for initiating the process of blocking traffic
+                on the port where an attack is suspected. It achieves this by calling the <code>block_traffic</code>
+                function.
+            </p>
+
+            <h3>Function: block_traffic</h3>
+            <p>The <code>block_traffic</code> function sends a flow modification message to the OpenFlow switch to drop
+                all packets coming from the specified port.</p>
+            <pre><code>
+    def block_traffic(port):
+        msg = of.ofp_flow_mod()
+        msg.match.in_port = port
+        msg.idle_timeout = 0
+        msg.hard_timeout = 0
+        openflow_connection.send(msg)
+        log.info(f"SWITCH FLOW MOD SENT - BLOCKED PORT {port}")
+        </code></pre>
+
+            <h4>Method: block_traffic</h4>
+            <p>This function sends a flow modification message to block traffic on the specified port.</p>
+            <p><strong>Description:</strong>
+                The <code>block_traffic</code> function creates a flow modification rule that drops all packets coming
+                from a specific port. This rule is then sent to the OpenFlow switch to enforce the traffic block. The
+                function logs that the port has been blocked.
+            </p>
+        </div>
+        <div id="consumer_thread" class="content">
+            <h2>Kafka Consumer Thread for Metrics Monitoring</h2>
+            <p>This script is a part of the Smartville project and is responsible for consuming messages from a Kafka
+                topic,
+                updating various performance metrics, and monitoring the system for any anomalies.</p>
+
+            <h3>Class: ConsumerThread</h3>
+            <p>The <code>ConsumerThread</code> class is a multi-threaded implementation that consumes data from a Kafka
+                topic,
+                updates system metrics like CPU, RAM, network traffic, and latency, and takes appropriate actions if no
+                data is
+                received for an extended period.</p>
+
+            <h4>Method: <code>__init__</code></h4>
+            <p>The constructor initializes the thread with various parameters like Kafka server details, metrics, and
+                topic
+                information.</p>
+            <pre><code>
+            def __init__(
+                self, 
+                bootstrap_servers,
+                topic_name, 
+                topic_object,
+                cpu_metric, 
+                ram_metric, 
+                ping_metric, 
+                incoming_traffic_metric,
+                outcoming_traffic_metric,
+                controller_metrics_dict
+                ):
+            </code></pre>
+
+            <h4>Method: update_cpu_metric</h4>
+            <p>This method updates the CPU metric based on the value received from the Kafka topic and stores it in the
+                metrics dictionary.</p>
+            <pre><code>
+            def update_cpu_metric(self, value, label_value):
+                self.cpu_metric.labels(label_name=label_value).set(value)
+                with self.lock:
+                    if value == b'nan' or math.isnan(value):
+                        value = -1.0
+                    self.controller_metrics_dict[self.topic_name][CPU].append(value)
+            </code></pre>
+
+            <h4>Method: run</h4>
+            <p>This method runs the consumer loop, polling messages from the Kafka topic and updating the respective
+                metrics.
+                If no messages are received for a specified time, it stops the thread and deletes the topic from the
+                Kafka
+                server.</p>
+            <pre><code>
+            def run(self):
+                # Kafka consumer and admin client configuration
+                consumer_conf = {'bootstrap.servers': self.bootstrap_servers, 
+                                 'group.id': 'my-group'}
+                consumer = Consumer(consumer_conf)
+        
+                conf = {'bootstrap.servers': self.bootstrap_servers}
+                admin_client = AdminClient(conf)
+                
+                delete_ok = False
+                end_message = str(math.nan).encode('utf-8')
+                stopper = 0       
+        
+                num_partitions = len(self.topic_object.partitions)
+        
+                if (num_partitions==5):
+                    consumer.subscribe([self.topic_name])
+        
+                    try:
+                        while not self.exit_signal.is_set():
+                            msg = consumer.poll(timeout=3)
+        
+                            if msg is None :
+                                self.update_cpu_metric(end_message, self.topic_name)
+                                self.update_ram_metric(end_message, self.topic_name)
+                                self.update_ping_metric(end_message, self.topic_name)
+                                self.update_incoming_traffic_metric(end_message, self.topic_name)
+                                self.update_outcoming_traffic_metric(end_message, self.topic_name)
+        
+                                stopper += 1
+                                if (stopper <40)
+                                    continue
+                                else:
+                                    delete_ok = True
+                                    break
+                            if msg.error():
+                                if msg.error().code() == KafkaException._PARTITION_EOF:
+                                    print(f'Partition {msg.partition()} terminated')
+                                    continue
+                                else:
+                                    print(f'Error: {msg.error()}')
+                                    break
+        
+                            if (msg.partition()==0):
+                                self.update_cpu_metric(float(msg.value()), self.topic_name)
+                                stopper = 0
+        
+                            elif (msg.partition()==1):
+                                self.update_ram_metric(float(msg.value()), self.topic_name)
+                                stopper = 0
+        
+                            elif (msg.partition()==2):
+                                self.update_ping_metric(float(msg.value()), self.topic_name)
+                                stopper = 0
+        
+                            elif (msg.partition()==3):
+                                self.update_incoming_traffic_metric(float(msg.value()), self.topic_name)
+                                stopper = 0
+        
+                            elif (msg.partition()==4):
+                                self.update_outcoming_traffic_metric(float(msg.value()), self.topic_name)
+                                stopper = 0
+                    finally:
+                        if delete_ok:
+                            admin_client.delete_topics([self.topic_name])
+        
+                        print(f"{self.topic_name}: stopped thread")
+                else:
+                    admin_client.delete_topics([self.topic_name])
+                    print(f"topic {self.topic_name} did not registered correctly")
+            </pre></code>
+
+            <h4>Method: stop_threads</h4>
+            <p>This method sets an event to signal the thread to stop running.</p>
+            <pre><code>
+            def stop_threads(self):
+                print("Stopping thread...")
+                self.exit_signal.set()
+            </code></pre>
+        </div>
+        <div id="curricula" class="content">
+            <h2>Smartville Attack Classification Dictionaries</h2>
+            <p>This section is part of the Smartville project, and it defines various dictionaries used to classify IP addresses associated with specific types of attacks. The dictionaries categorize IPs into known attack types, Zero-Day Attacks (ZdA), and assign them to training and testing groups.</p>
+        
+            <h3>Alternate Curriculum 0</h3>
+            <p>This section defines the dictionaries for the first alternate curriculum, focusing on various known and Zero-Day attacks for training purposes.</p>
+        
+            <h4>Dictionary: <code>AC0_TRAINING_LABELS_DICT</code></h4>
+            <p>This dictionary labels IP addresses with their corresponding attack types. The default label is "Benign," reserved for legitimate traffic.</p>
+            <pre><code>AC0_TRAINING_LABELS_DICT = defaultdict(lambda: "Benign")</code></pre>
+        
+            <h4>Dictionary: <code>AC0_ZDA_DICT</code></h4>
+            <p>This dictionary marks specific IP addresses as part of Zero-Day Attack group 1 (ZdA G1).</p>
+            <pre><code>AC0_ZDA_DICT = defaultdict(lambda: False)</code></pre>
+        
+            <h4>Dictionary: <code>AC0_TEST_ZDA_DICT</code></h4>
+            <p>This dictionary marks IP addresses in ZdA group 2 for testing purposes.</p>
+            <pre><code>AC0_TEST_ZDA_DICT = defaultdict(lambda: False)</code></pre>
+        
+            <h4>Known Attacks</h4>
+            <p>The following IP addresses are associated with specific known attacks:</p>
+            <pre><code>
+        # attacker-4
+        AC0_TRAINING_LABELS_DICT["192.168.1.7"] = "CC_HeartBeat"
+        
+        # attacker-5
+        AC0_TRAINING_LABELS_DICT["192.168.1.8"] = "Gen_DDoS"
+        
+        # attacker-6
+        AC0_TRAINING_LABELS_DICT["192.168.1.9"] = "H_Scan"
+            </code></pre>
+        
+            <h4>Zero-Day Attacks Group 1</h4>
+            <p>The following IP addresses are part of Zero-Day Attack group 1:</p>
+            <pre><code>
+        # attacker-7
+        AC0_TRAINING_LABELS_DICT["192.168.1.10"] = "Hakai (ZdA G1)"
+        AC0_ZDA_DICT["192.168.1.10"] = True
+        
+        # attacker-8
+        AC0_TRAINING_LABELS_DICT["192.168.1.11"] = "Torii (ZdA G1)"
+        AC0_ZDA_DICT["192.168.1.11"] = True
+        
+        # attacker-9
+        AC0_TRAINING_LABELS_DICT["192.168.1.12"] = "Mirai (ZdA G1)"
+        AC0_ZDA_DICT["192.168.1.12"] = True
+        
+        # attacker-10
+        AC0_TRAINING_LABELS_DICT["192.168.1.13"] = "Gafgyt (ZdA G1)"
+        AC0_ZDA_DICT["192.168.1.13"] = True
+            </code></pre>
+        
+            <h4>Zero-Day Attacks Group 2</h4>
+            <p>The following IP addresses are part of Zero-Day Attack group 2, and some are also marked for testing:</p>
+            <pre><code>
+        # attacker-11
+        AC0_TRAINING_LABELS_DICT["192.168.1.14"] = "Hajime (ZdA G2)"
+        AC0_ZDA_DICT["192.168.1.14"] = True
+        AC0_TEST_ZDA_DICT["192.168.1.14"] = True
+        
+        # attacker-12
+        AC0_TRAINING_LABELS_DICT["192.168.1.15"] = "Okiru (ZdA G2)"
+        AC0_ZDA_DICT["192.168.1.15"] = True
+        AC0_TEST_ZDA_DICT["192.168.1.15"] = True
+        
+        # attacker-13
+        AC0_TRAINING_LABELS_DICT["192.168.1.16"] = "Muhstik (ZdA G2)"
+        AC0_ZDA_DICT["192.168.1.16"] = True
+        AC0_TEST_ZDA_DICT["192.168.1.16"] = True
+            </code></pre>
+        
+            <h3>Alternate Curriculum 1</h3>
+            <p>This section defines the dictionaries for the second alternate curriculum, focusing on different known and Zero-Day attacks for training purposes.</p>
+            <h4>Dictionary: <code>AC1_TRAINING_LABELS_DICT</code></h4>
+            <p>This dictionary labels IP addresses with their corresponding attack types, similar to AC0 but with different attackers.</p>
+            <pre><code>AC1_TRAINING_LABELS_DICT = defaultdict(lambda: "Benign")</code></pre>
+        
+            <h4>Zero-Day Attacks Group 1</h4>
+            <p>The following IP addresses are part of Zero-Day Attack group 1:</p>
+            <pre><code>
+        # attacker-7
+        AC1_TRAINING_LABELS_DICT["192.168.1.10"] = "Hakai"
+        
+        # attacker-8
+        AC1_TRAINING_LABELS_DICT["192.168.1.11"] = "Torii"
+        
+        # attacker-12
+        AC1_TRAINING_LABELS_DICT["192.168.1.15"] = "Okiru"
+            </code></pre>
+        
+            <h4>Zero-Day Attacks Group 2</h4>
+            <p>The following IP addresses are part of Zero-Day Attack group 2:</p>
+            <pre><code>
+        # attacker-11
+        AC1_TRAINING_LABELS_DICT["192.168.1.14"] = "Hajime (ZdA G2)"
+        AC1_ZDA_DICT["192.168.1.14"] = True
+        AC1_TEST_ZDA_DICT["192.168.1.14"] = True
+        
+        # attacker-6
+        AC1_TRAINING_LABELS_DICT["192.168.1.9"] = "H_Scan (ZdA G2)"
+        AC1_ZDA_DICT["192.168.1.9"] = True
+        AC1_TEST_ZDA_DICT["192.168.1.9"] = True
+        
+        # attacker-13
+        AC1_TRAINING_LABELS_DICT["192.168.1.16"] = "Muhstik (ZdA G2)"
+        AC1_ZDA_DICT["192.168.1.16"] = True
+        AC1_TEST_ZDA_DICT["192.168.1.16"] = True
+            </code></pre>
+        
+            <h3>Alternate Curriculum 2</h3>
+            <p>This section defines the dictionaries for the third alternate curriculum, focusing on a new set of known and Zero-Day attacks for training purposes.</p>
+            <h4>Dictionary: <code>AC2_TRAINING_LABELS_DICT</code></h4>
+            <p>This dictionary labels IP addresses with their corresponding attack types, focusing on a different set of attackers.</p>
+            <pre><code>AC2_TRAINING_LABELS_DICT = defaultdict(lambda: "Benign")</code></pre>
+        
+            <h4>Zero-Day Attacks Group 1</h4>
+            <p>The following IP addresses are part of Zero-Day Attack group 1:</p>
+            <pre><code>
+        # attacker-4
+        AC2_TRAINING_LABELS_DICT["192.168.1.7"] = "CC_HeartBeat (ZdA G1)"
+        AC2_ZDA_DICT["192.168.1.7"] = True
+        
+        # attacker-5
+        AC2_TRAINING_LABELS_DICT["192.168.1.8"] = "Gen_DDoS (ZdA G1)"
+        AC2_ZDA_DICT["192.168.1.8"] = True
+        
+        # attacker-12
+        AC2_TRAINING_LABELS_DICT["192.168.1.15"] = "Okiru(ZdA G1)"
+        AC2_ZDA_DICT["192.168.1.15"] = True
+        
+        # attacker-6
+        AC2_TRAINING_LABELS_DICT["192.168.1.9"] = "H_Scan (ZdA G1)"
+        AC2_ZDA_DICT["192.168.1.9"] = True
+            </code></pre>
+        
+            <h4>Zero-Day Attacks Group 2</h4>
+            <p>The following IP addresses are part of Zero-Day Attack group 2:</p>
+            <pre><code>
+        # attacker-7
+        AC2_TRAINING_LABELS_DICT["192.168.1.10"] = "Hakai (ZdA G2)"
+        AC2_ZDA_DICT["192.168.1.10"] = True
+        AC2_TEST_ZDA_DICT["192.168.1.10"] = True
+        
+        # attacker-10
+        AC2_TRAINING_LABELS_DICT["192.168.1.13"] = "Gafgyt (ZdA G2)"
+        AC2_ZDA_DICT["192.168.1.13"] = True
+        AC2_TEST_ZDA_DICT["192.168.1.13"] = True
+        
+        # attacker-8
+        AC2_TRAINING_LABELS_DICT["192.168.1.11"] = "Torii (ZdA G2)"
+        AC2_ZDA_DICT["192.168.1.11"] = True
+        AC2_TEST_ZDA_DICT["192.168.1.11"] = True
+            </code></pre>
+        
+            <h3>Custom Curriculum</h3>
+            <p>This section defines a custom curriculum for training purposes, where attack patterns and labels can be adjusted as desired.</p>
+        
+            <h4>Dictionary: <code>CUSTOM_TRAINING_LABELS_DICT</code></h4>
+            <p>This dictionary is used for labeling IP addresses with custom attack patterns for training purposes.</p>
+            <pre><code>CUSTOM_TRAINING_LABELS_DICT = defaultdict(lambda: "Benign")</code></pre>
+        
+            <h4>Zero-Day Attacks Group 1</h4>
+            <p>The following IP addresses are part of a custom-defined Zero-Day Attack group 1:</p>
+            <pre><code>
+        # attacker-5
+        CUSTOM_TRAINING_LABELS_DICT["192.168.1.5"] = "Mirai (ZdA G1)"
+        CUSTOM_ZDA_DICT["192.168.1.5"] = True
+            </code></pre>
+        
+            <h4>Zero-Day Attacks Group 2</h4>
+            <p>The following IP addresses are part of a custom-defined Zero-Day Attack group 2:</p>
+            <pre><code>
+        # attacker-10
+        CUSTOM_TRAINING_LABELS_DICT["192.168.1.10"] = "Hakai (ZdA G2)"
+        CUSTOM_ZDA_DICT["192.168.1.10"] = True
+        CUSTOM_TEST_ZDA_DICT["192.168.1.10"] = True
+            </code></pre>
+        </div>
+        <div id="dash_generator" class="content">
+            <h2>Grafana Dashboard Generator</h2>
+            <p>This section is part of the Smartville project and describes the `DashGenerator` class responsible for creating and managing dashboards in Grafana.</p>
+        
+            <h3>Class: DashGenerator</h3>
+            <p>The `DashGenerator` class is dedicated to inserting various dashboards into Grafana for interactive visualization. It leverages the Grafana API for connecting to the Grafana host using an API key.</p>
+        
+            <h4>Method: <code>__init__</code></h4>
+            <p>This constructor method initializes the `DashGenerator` class with a connection to Grafana and automatically triggers the generation of all dashboards.</p>
+            <pre><code>
+            def __init__(self, grafana_connection):
+                self.grafana_connection = grafana_connection
+                self.generate_all_dashes()
+            </code></pre>
+            <p><strong>Description:</strong> This method sets up the initial connection to the Grafana server and begins the process of generating all necessary dashboards for monitoring metrics like CPU usage, RAM, network latency, and more.</p>
+        
+            <h4>Method: generate_all_dashes</h4>
+            <p>This method is responsible for generating all the necessary dashboards in Grafana. It checks if each dashboard already exists using the `dashboard_exists` method, and if not, it creates them using the `generate_single_dash_with_return` and `generate_single_dash` methods.</p>
+            <pre><code>
+            def generate_all_dashes(self):
+                while True:
+                    if not self.dashboard_exists('CPU_data'):
+                        print("Creating new dashboard: CPU_data ...")
+                        self.generate_single_dash_with_return('CPU_data','CPU (%)')
+                    else:
+                        break
+        
+                if not self.dashboard_exists('RAM_data'):
+                    print("Creating new dashboard: RAM_data...")
+                    self.generate_single_dash('RAM_data','RAM (GB)')
+        
+                if not self.dashboard_exists('PING_data'):
+                    print("Creating new dashboard:  PING_data ...")
+                    self.generate_single_dash('PING_data','Latenza (ms)')
+        
+                if not self.dashboard_exists('INT_data'):
+                    print("Creating new dashboard:  INT_data...")
+                    self.generate_single_dash('INT_data','Traffico rete in entrata (KBps)')
+        
+                if not self.dashboard_exists('ONT_data'):
+                    print("Creating new dashboard: ONT_data creazione in corso...")
+                    self.generate_single_dash('ONT_data','Traffico rete in uscita (KBps)')
+            </code></pre>
+            <p><strong>Description:</strong> This method ensures that all necessary dashboards are present in Grafana. If any are missing, it creates them. It covers various metrics, such as CPU usage, RAM usage, latency, and network traffic.</p>
+        
+            <h4>Method: dashboard_exists</h4>
+            <p>This method checks if a dashboard with the given UID already exists in Grafana.</p>
+            <pre><code>
+            def dashboard_exists(self, dash_UID):
+                try:
+                    self.grafana_connection.dashboard.get_dashboard(dash_UID)
+                    return True
+                except Exception:
+                    return False
+            </code></pre>
+            <p><strong>Description:</strong> This method attempts to retrieve a dashboard from Grafana using its unique identifier (UID). If the dashboard exists, it returns True; otherwise, it returns False.</p>
+        
+            <h4>Method: generate_single_dash_with_return</h4>
+            <p>This method creates a new dashboard in Grafana and returns a success message if the creation is successful.</p>
+            <pre><code>
+            def generate_single_dash_with_return(self, dash_UID, dash_name):
+                dashboard_config = {
+                    "dashboard": {
+                        "uid": dash_UID,
+                        "title": dash_name,
+                        "panels": [],
+                        "refresh": "5s",
+                        "time": {
+                            "from": "now-15m",
+                            "to": "now"
+                        },
+                    },
+                    "overwrite": False
+                }
+        
+                try:
+                    self.grafana_connection.dashboard.update_dashboard(dashboard_config)
+                    print(f"Dashboard with UID '{dash_UID}' created!")
+                    return True
+        
+                except Exception as e:
+                    print(f"Error: {e} try a different username or password")
+                    return False
+            </code></pre>
+            <p><strong>Description:</strong> This method configures and creates a new dashboard in Grafana using the provided UID and name. If the creation is successful, it returns a confirmation message; otherwise, it prints an error.</p>
+        
+            <h4>Method: generate_single_dash</h4>
+            <p>This method creates a new dashboard in Grafana.</p>
+            <pre><code>
+            def generate_single_dash(self, dash_UID, dash_name):
+                dashboard_config = {
+                    "dashboard": {
+                        "uid": dash_UID,
+                        "title": dash_name,
+                        "panels": [],
+                        "refresh": "5s",
+                        "time": {
+                            "from": "now-15m",
+                            "to": "now"
+                        },
+                    },
+                    "overwrite": False
+                }
+        
+                self.grafana_connection.dashboard.update_dashboard(dashboard_config)
+                print(f"Dashboard con UID '{dash_UID}' created!")
+            </code></pre>
+            <p><strong>Description:</strong> This method creates a new dashboard in Grafana based on the provided UID and name. It does not return any value but confirms the creation via a print statement.</p>
+        </div>
+        <div id="arp_entry" class="content">
+            <h2>ARP Entry Class</h2>
+            <p>This section is part of the Smartville project and describes the `Entry` class used for managing ARP table entries in the network.</p>
+        
+            <h3>Class: Entry</h3>
+            <p>The `Entry` class is not strictly an ARP entry. It is used to determine which port to forward traffic out of and to answer ARP replies. It also includes a timeout feature to determine when the entry should be considered expired.</p>
+        
+            <h4>Method: <code>__init__</code></h4>
+            <p>This constructor method initializes an `Entry` object with a specified port, MAC address, and ARP timeout value.</p>
+            <pre><code>
+            def __init__ (self, port, mac, ARP_TIMEOUT):
+                self.timeout = time.time() + ARP_TIMEOUT
+                self.port = port
+                self.mac = mac
+            </code></pre>
+            <p><strong>Description:</strong> This method sets the initial values for the entry, including the port number, MAC address, and timeout period. It calculates the expiration time based on the current time and the provided ARP timeout value.</p>
+        
+            <h4>Method: __eq__</h4>
+            <p>This method checks if two `Entry` objects are equal based on their port and MAC address.</p>
+            <pre><code>
+            def __eq__ (self, other):
+                if type(other) == tuple:
+                    return (self.port, self.mac)==other
+                else:
+                    return (self.port, self.mac)==(other.port,other.mac)
+            </code></pre>
+            <p><strong>Description:</strong> This method compares the current `Entry` object with another object or tuple to determine if they are equal. The comparison is based on the port and MAC address values.</p>
+        
+            <h4>Method: __ne__</h4>
+            <p>This method checks if two `Entry` objects are not equal.</p>
+            <pre><code>
+            def __ne__ (self, other):
+                return not self.__eq__(other)
+            </code></pre>
+            <p><strong>Description:</strong> This method checks if the current `Entry` object is not equal to another object or tuple, based on the port and MAC address values.</p>
+        
+            <h4>Method: isExpired</h4>
+            <p>This method checks if the `Entry` object has expired based on the timeout value.</p>
+            <pre><code>
+            def isExpired (self):
+                if self.port == of.OFPP_NONE: return False
+                return time.time() > self.timeout
+            </code></pre>
+            <p><strong>Description:</strong> This method determines whether the `Entry` has expired by comparing the current time with the pre-calculated timeout value. If expired, the entry is considered invalid for further use.</p>
+        </div>
+        <div id="flow" class="content">
+            <h2>Circular Buffer and Flow Management</h2>
+            <p>This section is part of the Smartville project and describes the `CircularBuffer` and `Flow` classes used for managing network flow features and storing them efficiently.</p>
+        
+            <h3>Class: CircularBuffer</h3>
+            <p>The `CircularBuffer` class is a utility for storing features in a fixed-size buffer that overwrites old data as new data arrives.</p>
+        
+            <h4>Method: <code>__init__</code></h4>
+            <p>This constructor method initializes the `CircularBuffer` with a specified buffer size and feature size.</p>
+            <pre><code>
+            def __init__(self, buffer_size=10, feature_size=4):
+                self.buffer_size = buffer_size
+                self.feature_size = feature_size
+                self.buffer = torch.zeros(buffer_size, feature_size)
+                self.is_full = False
+                self.calls_to_add = 0
+            </code></pre>
+            <p><strong>Description:</strong> This method sets up the buffer with a fixed size and initializes it with zeros. It also tracks how many times new data has been added to determine when the buffer is full.</p>
+        
+            <h4>Method: add</h4>
+            <p>This method adds a new tensor to the buffer, rolling the buffer and inserting the new data at the end.</p>
+            <pre><code>
+            def add(self, new_tensor):
+                self.buffer = torch.roll(self.buffer, shifts=-1, dims=0)
+                self.buffer[-1] = new_tensor
+                self.calls_to_add += 1
+                if self.calls_to_add >= self.buffer_size:
+                    self.is_full = True
+            </code></pre>
+            <p><strong>Description:</strong> This method shifts the existing data in the buffer up by one position and adds the new tensor at the end. It also tracks whether the buffer has become full.</p>
+        
+            <h4>Method: get_buffer</h4>
+            <p>This method returns the current state of the buffer.</p>
+            <pre><code>
+            def get_buffer(self):
+                return self.buffer
+            </code></pre>
+            <p><strong>Description:</strong> This method provides access to the current data stored in the buffer, returning it as a tensor.</p>
+        
+            <h3>Class: Flow</h3>
+            <p>The `Flow` class manages network flows, including source and destination IPs, and stores flow features in a circular buffer.</p>
+        
+            <h4>Method: <code>__init__</code></h4>
+            <p>This constructor method initializes a `Flow` object with source and destination IPs, switch output port, and flow features.</p>
+            <pre><code>
+            def __init__(
+                self, 
+                source_ip, 
+                dest_ip, 
+                switch_output_port,
+                flow_feat_dim=4,
+                flow_buff_len=10):
+                
+                self.source_ip = source_ip
+                self.dest_ip = dest_ip
+                self.switch_output_port = switch_output_port
+                self.flow_id = self.source_ip + "_" + self.dest_ip + "_" + str(self.switch_output_port)
+                self.switch_input_port = None
+                self.__feat_tensor = CircularBuffer(
+                                    buffer_size=flow_buff_len, 
+                                    feature_size=flow_feat_dim)
+                self.packets_tensor = None
+                self.node_feats = None
+                self.element_class = "Bening"
+                self.zda = False
+                self.test_zda = False
+            </code></pre>
+            <p><strong>Description:</strong> This method initializes a network flow with identifying information, such as source and destination IPs and the port for forwarding traffic. It also sets up a circular buffer for storing flow features.</p>
+        
+            <h4>Method: get_feat_tensor</h4>
+            <p>This method returns the feature tensor stored in the circular buffer.</p>
+            <pre><code>
+            def get_feat_tensor(self):
+                return self.__feat_tensor.get_buffer()
+            </code></pre>
+            <p><strong>Description:</strong> This method retrieves the current state of the feature tensor stored in the circular buffer, representing the accumulated data for the flow.</p>
+        
+            <h4>Method: enrich_flow_features</h4>
+            <p>This method adds new feature slices to the flow's circular buffer.</p>
+            <pre><code>
+            def enrich_flow_features(self, feat_slice: torch.Tensor):
+                self.__feat_tensor.add(feat_slice)
+            </code></pre>
+            <p><strong>Description:</strong> This method appends new feature data to the flow's circular buffer, updating the stored feature set for the flow.</p>
+        </div>
+        <div id="flow_logger" class="content">
+            <h2>Flow Logger for Smartville Project</h2>
+            <p>This section is part of the Smartville project and describes the `FlowLogger` class responsible for logging network flows and processing packet data for analysis.</p>
+        
+            <h3>Class: FlowLogger</h3>
+            <p>The `FlowLogger` class manages the logging and processing of network flows. It captures flow statistics, processes packets, and updates the flow features used by the AI components of the Smartville project.</p>
+        
+            <h4>Method: <code>__init__</code></h4>
+            <p>This constructor method initializes the `FlowLogger` class with the necessary parameters, including dictionaries for training labels, Zero-Day Attacks (ZdA), and other configurations.</p>
+            <pre><code>
+            def __init__(
+              self,
+              training_labels_dict,
+              zda_dict,
+              test_zda_dict,
+              multi_class,
+              packet_buffer_len,
+              packet_feat_dim,
+              anonymize_transport_ports,
+              flow_feat_dim=4,
+              flow_buff_len=10):
+            </code></pre>
+            <p><strong>Description:</strong> This method sets up the initial configuration for logging flows, including settings for packet feature dimensions, flow feature dimensions, and dictionaries for labeling and managing attack types.</p>
+        
+            <h4>Method: extract_flow_feature_tensor</h4>
+            <p>This method extracts features from a flow and returns them as a tensor.</p>
+            <pre><code>
+            def extract_flow_feature_tensor(self, flow):
+               return torch.Tensor(
+                  [flow['byte_count'], 
+                    flow['duration_nsec'] / 10e9,
+                    flow['duration_sec'],
+                    flow['packet_count']]).to(torch.float32)
+            </code></pre>
+            <p><strong>Description:</strong> This method converts flow statistics such as byte count, duration, and packet count into a tensor format, which is then used for further analysis.</p>
+        
+            <h4>Method: get_anonymized_copy</h4>
+            <p>This method returns an anonymized copy of the provided IPv4 packet.</p>
+            <pre><code>
+            def get_anonymized_copy(self, original_packet):
+              new_ipv4_packet = ipv4(raw=original_packet.raw)
+              new_ipv4_packet.srcip = '0.0.0.0'
+              new_ipv4_packet.dstip = '0.0.0.0'
+              if self.anomyn_ports:
+                 new_ipv4_packet.next.srcport = 0
+                 new_ipv4_packet.next.dstport = 0
+              return new_ipv4_packet
+            </code></pre>
+            <p><strong>Description:</strong> This method creates an anonymized version of the given packet by masking the IP addresses and, optionally, the transport ports.</p>
+        
+            <h4>Method: build_packet_tensor</h4>
+            <p>This method builds a tensor from the packet data, used for flow analysis.</p>
+            <pre><code>
+            def build_packet_tensor(self, packet):
+                packet_copy = self.get_anonymized_copy(packet)
+                packet_data = packet_copy.raw[:self.packet_feat_dim]
+                payload_data_tensor = torch.tensor([int(x) for x in packet_data], dtype=torch.float32)
+                if payload_data_tensor.shape[0] < self.packet_feat_dim:
+                    payload_data_tensor = F.pad(payload_data_tensor, 
+                                          (0, self.packet_feat_dim - payload_data_tensor.shape[0]), 
+                                          mode='constant', value=0)
+                return payload_data_tensor
+            </code></pre>
+            <p><strong>Description:</strong> This method converts the packet data into a tensor, padding it if necessary to fit the expected feature dimension.</p>
+        
+            <h4>Method: cache_unprocessed_packets</h4>
+            <p>This method caches packets that arrive at the controller but lack flow rules, storing them until the flow rules are available.</p>
+            <pre><code>
+            def cache_unprocessed_packets(self, src_ip, dst_ip, packet):
+                partial_flow_id = str(src_ip) + "_" + str(dst_ip)
+                packet_tensor = self.build_packet_tensor(packet=packet.next)
+                if partial_flow_id in self.packet_cache.keys():
+                    curr_packets_circ_buff = self.packet_cache[partial_flow_id]
+                else:
+                   curr_packets_circ_buff = CircularBuffer(
+                      buffer_size=self.packet_buffer_len, 
+                      feature_size=self.packet_feat_dim)
+                curr_packets_circ_buff.add(packet_tensor)
+                self.packet_cache[partial_flow_id] = curr_packets_circ_buff
+                return curr_packets_circ_buff.is_full
+            </code></pre>
+            <p><strong>Description:</strong> This method stores packets in a buffer until they can be associated with flow rules, augmenting the data available for flow analysis.</p>
+        
+            <h4>Method: process_received_flow</h4>
+            <p>This method processes flow statistics received by the controller, updating or creating flow objects accordingly.</p>
+            <pre><code>
+            def process_received_flow(self, flow):
+                sender_ip_addr = flow['match']['nw_src'].split('/')[0]
+                new_flow = Flow(
+                  source_ip=sender_ip_addr, 
+                  dest_ip=flow['match']['nw_dst'].split('/')[0], 
+                  switch_output_port=flow['actions'][1]['port'],
+                  flow_feat_dim=self.flow_feat_dim,
+                  flow_buff_len=self.flow_buff_len)
+                new_flow.element_class = self.training_labels_dict[sender_ip_addr]
+                new_flow.zda = self.zda_dict[sender_ip_addr]
+                new_flow.test_zda = self.test_zda_dict[sender_ip_addr]
+                flow_features = self.extract_flow_feature_tensor(flow=flow)
+                if new_flow.flow_id in self.flows_dict.keys():
+                  self.flows_dict[new_flow.flow_id].enrich_flow_features(flow_features)
+                else:
+                  new_flow.enrich_flow_features(flow_features)
+                  self.flows_dict[new_flow.flow_id] = new_flow
+                self.update_packet_buffer(new_flow)
+            </code></pre>
+            <p><strong>Description:</strong> This method creates or updates flow objects with the received statistics and enriches them with features extracted from the flow.</p>
+        
+            <h4>Method: update_packet_buffer</h4>
+            <p>This method associates cached packets with their corresponding flows once the flow statistics are available.</p>
+            <pre><code>
+            def update_packet_buffer(self, flow_object):
+               partial_flow_id = "_".join(flow_object.flow_id.split("_")[:-1])
+               if partial_flow_id in self.packet_cache.keys():
+                  packets_buffer = self.packet_cache[partial_flow_id]
+                  del self.packet_cache[partial_flow_id]
+                  if self.flows_dict[flow_object.flow_id].packets_tensor == None:
+                     self.flows_dict[flow_object.flow_id].packets_tensor = packets_buffer
+                  else: 
+                     for single_packet_tensor in packets_buffer.buffer:
+                        self.flows_dict[flow_object.flow_id].packets_tensor.add(single_packet_tensor)
+            </code></pre>
+            <p><strong>Description:</strong> This method attaches packet data from the cache to the corresponding flow, enriching the flow with additional features.</p>
+        
+            <h4>Method: _handle_flowstats_received</h4>
+            <p>This method handles flow statistics received from the network, processing each flow and updating the flow logger's internal state.</p>
+            <pre><code>
+            def _handle_flowstats_received (self, event):
+              self.logger_instance.debug("FlowStatsReceived")
+              stats = flow_stats_to_list(event.stats)
+              for sender_flow in stats:
+                self.process_received_flow(flow=sender_flow)
+            </code></pre>
+            <p><strong>Description:</strong> This method listens for flow statistics events, processing each received flow to update the state of the flow logger.</p>
+        
+            <h4>Method: reset_all_flows_metadata</h4>
+            <p>This method resets the metadata for all logged flows.</p>
+            <pre><code>
+            def reset_all_flows_metadata(self):
+               self.flows_dict = {}
+            </code></pre>
+            <p><strong>Description:</strong> This method clears all flow metadata, effectively resetting the flow logger's state.</p>
+        
+            <h4>Method: reset_single_flow_metadata</h4>
+            <p>This method resets the metadata for a single flow based on its flow ID.</p>
+            <pre><code>
+            def reset_single_flow_metadata(self, flow_id):
+               del self.flows_dict[flow_id]
+            </code></pre>
+            <p><strong>Description:</strong> This method deletes the metadata for a specific flow, identified by its flow ID.</p>
+        </div>
+        
+        <div id="grafana_prometheus" class="content">
+            <h2>Grafana Prometheus Data Source Registration</h2>
+            <p>This section is part of the Smartville project and provides a script to register Prometheus as a data source in Grafana. While the Prometheus data source is usually added via configuration files, this script can be useful for adding or modifying data sources dynamically.</p>
+        
+            <h4>Function: <code>delete_datasources_by_name</code></h4>
+            <p>This function attempts to delete an existing data source in Grafana with the specified name to avoid conflicts with pre-existing sources.</p>
+            <pre><code>
+            def delete_datasources_by_name(grafana_connection, datasource_name):
+                print('Trying to delete previous datasource named prometheus')
+                try:
+                    response = grafana_connection.datasource.delete_datasource_by_name(datasource_name)
+                    print(response['message'])
+                except Exception as grafana_error:
+                    print('Cannot delete datasource: ', grafana_error)
+            </code></pre>
+            <p><strong>Description:</strong> This function connects to the Grafana API and attempts to delete a data source by its name. It prints a success or error message depending on the result of the operation.</p>
+        
+            <h4>Function: <code>add_datasource</code></h4>
+            <p>This function adds a new data source to Grafana using the provided configuration.</p>
+            <pre><code>
+            def add_datasource(grafana_connection, datasource_config):
+                response = grafana_connection.datasource.create_datasource(datasource_config)
+                if response['message'] == 'Datasource added':
+                    print('Data source added successfully.')
+                else:
+                    print(f'Failed to add data source. Error message: {response["message"]}')
+            </code></pre>
+            <p><strong>Description:</strong> This function sends a request to the Grafana API to create a new data source based on the provided configuration. It prints a success message if the data source is added successfully, or an error message if it fails.</p>
+        
+            <h4>Main Block: <code>if __name__ == "__main__"</code></h4>
+            <p>This block represents the main entry point of the script. It sets up the connection to Grafana, specifies the Prometheus data source parameters, and calls the functions to delete and add the data source.</p>
+            <pre><code>
+            if __name__ == "__main__":
+                grafana_url = f'localhost:3000'  # URL where Grafana is hosted
+                prometheus_url = f'http://localhost:9090/24):9090'
+                datasource_config = {
+                    "name": "prometheus",
+                    "type": "prometheus",
+                    "url": prometheus_url,  # URL of the Prometheus server
+                    "access": "direct",  # Access mode (proxy or direct)
+                    "basicAuth": True,  # Whether to use basic authentication
+                    "isDefault": True  # Whether to set this data source as default
+                }
+        
+                grafana_connection = GrafanaFace(auth=('admin', 'admin'), host=grafana_url)
+                delete_datasources_by_name(grafana_connection, "prometheus")
+                add_datasource(grafana_connection, datasource_config)
+            </code></pre>
+            <p><strong>Description:</strong> The main block initializes the Grafana connection and the Prometheus data source configuration. It first attempts to delete any existing Prometheus data source with the same name and then adds the new data source based on the provided configuration.</p>
+        </div>
+        
+        <div id="metrics_logger" class="content">
+            <h2>Metrics Logger for Kafka and Grafana</h2>
+            <p>This section is part of the Smartville project and describes the `MetricsLogger` class, which is responsible for logging and monitoring metrics from a Kafka server and displaying them in Grafana.</p>
+        
+            <h3>Class: MetricsLogger</h3>
+            <p>The `MetricsLogger` class connects to a Kafka server, initializes Prometheus metrics, and generates dashboards in Grafana for real-time monitoring of system performance metrics such as CPU usage, RAM usage, and network traffic.</p>
+        
+            <h4>Method: <code>__init__</code></h4>
+            <p>This constructor method initializes the `MetricsLogger` class with the necessary parameters and starts the connection to Kafka and Prometheus.</p>
+            <pre><code>
+            def __init__(
+                    self, 
+                    server_addr = "192.168.1.1:9092",
+                    max_conn_retries = 5,
+                    metric_buffer_len = 10,
+                    grafana_user="admin", 
+                    grafana_pass="admin"):
+            </code></pre>
+            <p><strong>Description:</strong> This method sets up the initial configuration for connecting to Kafka and Grafana, initializing the Prometheus server and setting up metrics buffers. It also starts the consumer thread that monitors and logs the metrics.</p>
+        
+            <h4>Method: init_kafka_connection</h4>
+            <p>This method attempts to establish a connection to the Kafka server, retrying up to the specified maximum number of retries.</p>
+            <pre><code>
+            def init_kafka_connection(self):
+                retries = 0
+                while retries < self.max_conn_retries: 
+                    if server_exist(self.server_addr):
+                        try:
+                            conf = {'bootstrap.servers': self.server_addr}
+                            self.kafka_admin_client = AdminClient(conf)
+                            self.topics = self.kafka_admin_client.list_topics(timeout=5)
+                            return True
+                        except KafkaException as e:
+                            print(f"Kafka connection error {e}")
+                            self.kafka_admin_client = None
+                            return False
+                    else:
+                        print(f"Could not find Kafka server at {self.server_addr}")
+                        retries += 1
+                return False
+            </code></pre>
+            <p><strong>Description:</strong> This method attempts to establish a connection to the Kafka server using the provided server address. If the connection fails, it retries up to the maximum number of retries specified.</p>
+        
+            <h4>Method: init_prometheus_server</h4>
+            <p>This method initializes the Prometheus server and defines the various metrics that will be tracked and displayed in Grafana.</p>
+            <pre><code>
+            def init_prometheus_server(self):
+                start_http_server(port=8000, addr='localhost')
+                self.cpu_metric = Gauge('CPU_percentage', 'Metrica CPU percentuale', ['label_name'])
+                self.ram_metric = Gauge('RAM_GB', 'Metrica RAM', ['label_name'])
+                self.ping_metric = Gauge('Latenza_ms', 'Metrica latenza del segnale', ['label_name'])
+                self.incoming_traffic_metric = Gauge('Incoming_network_KB', 'Metrica traffico in entrata', ['label_name'])
+                self.outcoming_traffic_metric = Gauge('Outcoming_network_KB', 'Metrica traffico in uscita', ['label_name'])
+                self.prometheus_connection = PrometheusConnect('http://localhost:9090/24):9090')
+            </code></pre>
+            <p><strong>Description:</strong> This method starts the Prometheus server on the specified port and defines the metrics that will be tracked, such as CPU usage, RAM usage, latency, and network traffic. These metrics are then used to generate Grafana dashboards.</p>
+        
+            <h4>Method: start_consuming</h4>
+            <p>This method starts the Kafka consumer thread, which polls Kafka topics for metrics data and updates the corresponding Prometheus metrics.</p>
+            <pre><code>
+            def start_consuming(self):
+                while True:
+                    updated_topic_list = []
+                    curr_topics_dict = self.kafka_admin_client.list_topics().topics
+                    for topic_name in curr_topics_dict.keys():
+                        if topic_name != '__consumer_offsets':
+                            updated_topic_list.append(topic_name)
+                    to_add_topic_list = list(set(updated_topic_list) - set(self.topic_list))
+                    self.topic_list = updated_topic_list
+                    time.sleep(5)
+                    for topic_name in to_add_topic_list:
+                        self.graph_generator.generate_all_graphs(topic_name)
+                        self.metrics_dict[topic_name] = {
+                            CPU: deque(maxlen=self.metric_buffer_len), 
+                            DELAY: deque(maxlen=self.metric_buffer_len), 
+                            IN_TRAFFIC: deque(maxlen=self.metric_buffer_len), 
+                            OUT_TRAFFIC: deque(maxlen=self.metric_buffer_len),
+                            RAM: deque(maxlen=self.metric_buffer_len) }
+                        print(f"Consumer Thread for topic {topic_name} commencing")
+                        thread = ConsumerThread(
+                            self.server_addr, 
+                            topic_name,
+                            curr_topics_dict[topic_name],
+                            self.cpu_metric,
+                            self.ram_metric,
+                            self.ping_metric,
+                            self.incoming_traffic_metric,
+                            self.outcoming_traffic_metric,
+                            self.metrics_dict)
+                        self.threads.append(thread)
+                        thread.start()
+                    if (self.sortcount>=12):    
+                        print(f"Organizing dashboard priorities...")
+                        self.graph_generator.sort_all_graphs()
+                        self.sortcount = 0
+                    self.sortcount +=1
+            </code></pre>
+            <p><strong>Description:</strong> This method runs the main loop for the Kafka consumer, polling for new topics and launching threads to handle metric updates. It also ensures that Grafana dashboards are organized and updated regularly.</p>
+        </div>
+        <div id="replay_buffer" class="content">
+            <h2>Replay Buffer for Smartville Project</h2>
+            <p>This section is part of the Smartville project and describes the `ReplayBuffer` class, which is used to store and manage experiences during training for machine learning models.</p>
+        
+            <h3>Class: ReplayBuffer</h3>
+            <p>The `ReplayBuffer` class is a specialized data structure that stores tuples of state transitions and their associated labels. These experiences can later be sampled in batches for training machine learning models.</p>
+        
+            <h4>Method: <code>__init__</code></h4>
+            <p>This constructor method initializes the `ReplayBuffer` class with a specified capacity, batch size, and random seed for reproducibility.</p>
+            <pre><code>
+            def __init__(self, capacity, batch_size, seed):
+                self.batch_size = batch_size
+                self.buffer = deque(maxlen=capacity)
+                random.seed(seed)
+            </code></pre>
+            <p><strong>Description:</strong> This method sets up the buffer with a fixed capacity and initializes it as a deque, which allows for efficient appending and popping. The random seed is used to ensure that sampling is reproducible.</p>
+        
+            <h4>Method: push</h4>
+            <p>This method adds a new experience tuple to the buffer.</p>
+            <pre><code>
+            def push(self, flow_state, packet_state, node_state, label, zda_label, test_zda_label):
+                self.buffer.append((flow_state, packet_state, node_state, label, zda_label, test_zda_label))
+            </code></pre>
+            <p><strong>Description:</strong> This method appends a new tuple of states and labels to the replay buffer, where it will be stored for future sampling during model training.</p>
+        
+            <h4>Method: sample</h4>
+            <p>This method samples a batch of experiences from the buffer and returns them as tensors.</p>
+            <pre><code>
+            def sample(self, num_of_samples):
+                batch = random.sample(self.buffer, num_of_samples)
+                flow_state_batch, packet_state_batch, node_state_batch, label_batch, zda_label_batch, test_zda_label_batch = zip(*batch)
+                if packet_state_batch[0] is None:
+                    if node_state_batch[0] is None:
+                        return torch.vstack(flow_state_batch), \
+                            None, \
+                            None, \
+                                torch.vstack(label_batch), \
+                                    torch.vstack(zda_label_batch), \
+                                        torch.vstack(test_zda_label_batch)
+                    else:
+                        return torch.vstack(flow_state_batch), \
+                            None, \
+                            torch.vstack(node_state_batch), \
+                                torch.vstack(label_batch), \
+                                    torch.vstack(zda_label_batch), \
+                                        torch.vstack(test_zda_label_batch)             
+                else:
+                    if node_state_batch[0] is None:
+                        return torch.vstack(flow_state_batch), \
+                            torch.vstack(packet_state_batch), \
+                            None, \
+                                torch.vstack(label_batch), \
+                                    torch.vstack(zda_label_batch), \
+                                        torch.vstack(test_zda_label_batch)
+                    else:
+                        return torch.vstack(flow_state_batch), \
+                            torch.vstack(packet_state_batch), \
+                            torch.vstack(node_state_batch), \
+                                torch.vstack(label_batch), \
+                                    torch.vstack(zda_label_batch), \
+                                        torch.vstack(test_zda_label_batch)
+            </code></pre>
+            <p><strong>Description:</strong> This method randomly samples a batch of experiences from the buffer. It unpacks the batch into its constituent elements and returns them as tensors, ready for input into a machine learning model. The method handles cases where some states might be `None` by returning the appropriate tensors.</p>
+        
+            <h4>Method: __len__</h4>
+            <p>This method returns the current size of the buffer.</p>
+            <pre><code>
+            def __len__(self):
+                return len(self.buffer)
+            </code></pre>
+            <p><strong>Description:</strong> This method simply returns the number of experiences currently stored in the buffer, allowing the model to check how much data is available for sampling.</p>
+        </div>
+        <div id="set_prometheus" class="content">
+            <h2>Prometheus Server Address Overwriting Script</h2>
+            <p>This section is part of the Smartville project and describes a script that overwrites the default Prometheus server address with a dynamically assigned IP address. This script is useful in scenarios where Prometheus is not running on the default `localhost` but on another host.</p>
+        
+            <h4>Function: <code>get_source_ip_address</code></h4>
+            <p>This function retrieves the IP address assigned to the network interface `eth1`.</p>
+            <pre><code>
+            def get_source_ip_address():
+                try:
+                    ip = ni.ifaddresses('eth1')[ni.AF_INET][0]['addr']
+                    return ip
+                except ValueError:
+                    return "Interface not found"
+            </code></pre>
+            <p><strong>Description:</strong> This function queries the network interface `eth1` to obtain its IP address. If the interface is not found, it returns an error message.</p>
+        
+            <h4>Function: <code>generate_prometheus_config</code></h4>
+            <p>This function generates a Prometheus configuration file (`prometheus.yml`) using the IP address provided.</p>
+            <pre><code>
+            def generate_prometheus_config(ip):
+                config = f"""\
+                global:
+                  scrape_interval:     5s
+                  evaluation_interval: 5s
+                  external_labels:
+                    monitor: 'example'
+                alerting:
+                  alertmanagers:
+                  - static_configs:
+                    - targets: ['{ip}:9093']
+                rule_files:
+                scrape_configs:
+                  - job_name: 'prometheus'
+                    scrape_interval: 5s
+                    scrape_timeout: 5s
+                    static_configs:
+                      - targets: ['{ip}:9090']
+                  - job_name: 'system_metrics'
+                    static_configs:
+                      - targets: ['{ip}:8000']"""
+                script_dir = os.path.dirname(os.path.abspath(__file__))
+                file_path = os.path.join(script_dir, 'prometheus.yml')
+                with open(file_path, 'w') as f:
+                    f.write(config)
+            </code></pre>
+            <p><strong>Description:</strong> This function creates a Prometheus configuration file that includes the dynamically assigned IP address. The configuration is written to a `prometheus.yml` file located in the same directory as the script.</p>
+        
+            <h4>Main Block: <code>if __name__ == "__main__"</code></h4>
+            <p>This block represents the main entry point of the script, which generates the Prometheus configuration file using the dynamically assigned IP address.</p>
+            <pre><code>
+            if __name__ == "__main__":
+                dynamic_IP = get_source_ip_address()
+                print(f'Generating Prometheus config file with ip {dynamic_IP}')
+                generate_prometheus_config(dynamic_IP)
+                print('Done!')
+            </code></pre>
+            <p><strong>Description:</strong> The main block calls the functions to obtain the current IP address of `eth1` and uses it to generate a Prometheus configuration file. It prints messages to indicate the progress and completion of the task.</p>
+        </div>
+        <div id="wandb_tracker" class="content">
+            <h2>WandB Tracker for Smartville Project</h2>
+            <p>This section is part of the Smartville project and describes the `WandBTracker` class, which is used to log experiments and hyperparameters to Weights & Biases (WandB), a tool for experiment tracking and model management.</p>
+        
+            <h3>Class: WandBTracker</h3>
+            <p>The `WandBTracker` class is responsible for initializing a WandB run and logging various configuration parameters and metadata for machine learning experiments conducted as part of the Smartville project.</p>
+        
+            <h4>Method: <code>__init__</code></h4>
+            <p>This constructor method initializes a WandB run, setting up the project name, run name, and configuration parameters.</p>
+            <pre><code>
+            def __init__(self, wanb_project_name, run_name, config_dict):
+                self.wb_logger = wandb.init(
+                    project=wanb_project_name,
+                    name=run_name,
+                    config=config_dict)
+            </code></pre>
+            <p><strong>Description:</strong> This method initializes a WandB session, where it logs the experiment details such as project name, run name, and any hyperparameters or configurations specified in the `config_dict`. This setup allows for detailed tracking and analysis of model training processes.</p>
+        </div>
+        
+        
+        
+        
+        
+
+</body>
+
+</html>

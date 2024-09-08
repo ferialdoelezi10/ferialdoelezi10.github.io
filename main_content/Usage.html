@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smartville Documentation</title>
+    <!-- Collegamento al file CSS esterno -->
+    <link rel="stylesheet" href="../style.css">
+    <script src="../script.js" defer></script>
+</head>
+
+<body>
+
+    <div class="sidebar">
+        <a href="Intro.html">Introduction</a>
+        <a href="Installation.html">Installation</a>
+        <a href="Usage.html">Usage</a>
+        <a href="Background.html">Background</a>
+        <a href="Docker.html">Docker Containers</a>
+        <a href="Platform.html">Grafana, Kafka, Prometheus</a>
+        <a href="PN.html">Prototypical Networks</a>
+        <a href="License.html">License</a>
+        <a href="Citation.html">Citation</a>
+        <a href="javascript:void(0) " onclick="toggleSubcategories('codeSubcategories')">Code</a>
+        <div id="codeSubcategories" style="display:none;">
+            <a href="../pox_controller/pox_controller.html" style="padding-left:20px;">pox_controller</a>
+            <ul id="poxControllerSubcategories" style="display:none;">
+                <li><a href="javascript:void(0)" style="padding-left:40px;"
+                        onclick="showContent('neural_models', true)">Neural models</a></li>
+                <li><a href="javascript:void(0)" style="padding-left:40px;"
+                        onclick="showContent('controller_brain', true)">Controller brain</a></li>
+                <li><a href="javascript:void(0)" style="padding-left:40px;"
+                        onclick="showContent('graph_generator', true)">Graph generator</a></li>
+                <li><a href="javascript:void(0)" style="padding-left:40px;"
+                        onclick="showContent('consumer_thread', true)">Consumer Thread</a></li>
+                <li><a href="javascript:void(0)" style="padding-left:40px;"
+                        onclick="showContent('smart_controller', true)">Smart Controller</a></li>
+                <li><a href="javascript:void(0)" style="padding-left:40px;" onclick="showContent('ai', true)">Ai</a>
+                </li>
+
+            </ul>
+        </div>
+    </div>
+    <div class="main-content">
+        <div class="header">
+            <h1><a href="../index.html" style="text-decoration: none;">Smartville</h1></a>
+            <p>This is the official SmartVille repository</p>
+            <p>Smartville is an open-source testbed based on GNS3, Pytorch, and Docker for training and testing online
+                intrusion detection systems based on machine learning.</p>
+            <p>Feel free to contribute!</p>
+            <p>The related paper <em>"SmartVille: an open-source SDN online-intrusion detection testbed"</em> is under
+                review. Stay tuned!</p>
+        </div>
+        <h2>Usage</h2>
+        <h3>Build Topology</h3>
+        <p>To start the <em>star topology</em> execute <code>star_topology.py</code>:</p>
+        <pre>python3 utils/star_topology.py</pre>
+        <p>You will get in the GNS3 GUI a new project with this scenario.</p>
+        <img src="https://github.com/DISTA-IoT/smartville/blob/release_1.0/readme_imgs/topology.png?raw=true"
+            alt="GNS3 Topology Diagram" class="center">
+        <p>Each node can communicate with each other and everyone has Internet connection available.</p>
+        <h4>Container Manager </h4>
+        <p>Execute the container_manager script and it will guide you through the rest!</p>
+        <pre>python3 utils/container_manager.py</pre>
+        <p>Stay tuned for a full walk-through tutorial!</p>
+        <h4>Modify nodes </h4>
+        <p>Each node can be modified or replaced by manipulating the node.dockerfile and star_topology.py to fit the
+            desired requirements.</p>
+
+</body>
+
+</html>

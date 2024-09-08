@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smartville Documentation</title>
+    <!-- Collegamento al file CSS esterno -->
+    <link rel="stylesheet" href="../style.css">
+    <script src="../script.js" defer></script>
+</head>
+
+<body>
+
+    <div class="sidebar">
+        <a href="Intro.html">Introduction</a>
+        <a href="Installation.html">Installation</a>
+        <a href="Usage.html">Usage</a>
+        <a href="Background.html">Background</a>
+        <a href="Docker.html">Docker Containers</a>
+        <a href="Platform.html">Grafana, Kafka, Prometheus</a>
+        <a href="PN.html">Prototypical Networks</a>
+        <a href="License.html">License</a>
+        <a href="Citation.html">Citation</a>
+        <a href="javascript:void(0) " onclick="toggleSubcategories('codeSubcategories')">Code</a>
+        <div id="codeSubcategories" style="display:none;">
+            <a href="../pox_controller/pox_controller.html" style="padding-left:20px;">pox_controller</a>
+            <ul id="poxControllerSubcategories" style="display:none;">
+                <li><a href="javascript:void(0)" style="padding-left:40px;"
+                        onclick="showContent('neural_models', true)">Neural models</a></li>
+                <li><a href="javascript:void(0)" style="padding-left:40px;"
+                        onclick="showContent('controller_brain', true)">Controller brain</a></li>
+                <li><a href="javascript:void(0)" style="padding-left:40px;"
+                        onclick="showContent('graph_generator', true)">Graph generator</a></li>
+                <li><a href="javascript:void(0)" style="padding-left:40px;"
+                        onclick="showContent('consumer_thread', true)">Consumer Thread</a></li>
+                <li><a href="javascript:void(0)" style="padding-left:40px;"
+                        onclick="showContent('smart_controller', true)">Smart Controller</a></li>
+                <li><a href="javascript:void(0)" style="padding-left:40px;" onclick="showContent('ai', true)">Ai</a>
+                </li>
+
+            </ul>
+        </div>
+    </div>
+    <div class="main-content">
+        <div class="header">
+            <h1><a href="../index.html" style="text-decoration: none;">Smartville</h1></a>
+            <p>This is the official SmartVille repository</p>
+            <p>Smartville is an open-source testbed based on GNS3, Pytorch, and Docker for training and testing online
+                intrusion detection systems based on machine learning.</p>
+            <p>Feel free to contribute!</p>
+            <p>The related paper <em>"SmartVille: an open-source SDN online-intrusion detection testbed"</em> is under
+                review. Stay tuned!</p>
+        </div>
+        
+            <h2>Prototypical Networks (PN)</h2>
+            <p>Prototypical Networks (PN) offer a neural architectural strategy that decouples the classification
+                task from the singular distributions of classes. PN can be considered representational machinery
+                that learns a proto-distribution from which every class distribution is generated. Not only do PNs
+                achieve learning efficiency, but the inherent geometrical inductive biases produce latent class
+                prototypes that can be further used for discriminative tasks.</p>
+            <p>PNs are trained through episodic learning: Given in input a set of query and support latent samples,
+                PNs make a multiclass classification inference for each one of the former as a function of the
+                labels of the latter: Let the input batch be represented by 𝓑 = {𝓑𝓢 ∪ 𝓑𝓠} where 𝓑𝓢 is the set
+                of support latent vectors 𝐳𝐬1, 𝐳𝐬2, …, 𝐳𝐬|𝓑𝓢| and 𝓑𝓠 is the set of query latent vectors
+                𝐳𝐪1, 𝐳𝐪2, …, 𝐳𝐪|𝓑𝓠|. The class-wise centroids or prototypes are computed using the support
+                latents:</p>
+            <img src="https://github.com/DISTA-IoT/smartville/blob/release_1.0/readme_imgs/formula.png?raw=true"
+                class="center">
+            <p>Where 𝑁<sub>𝑖</sub> is the number of support latents in class 𝑖 and 𝓒 is the set of classes
+                included in 𝓑.</p>
+            <p>Successively, PNs build a classification logits vector for each query sample where the vector
+                components are the association scores to each class. These scores are inversely proportional to the
+                Euclidean distances between the latent representation of the query sample and the correspondent
+                class prototype. The neural modules of the SmartController implemented in SmartVille are those of
+                ASAP that use PNs to perform multi-class classification of attacks. By doing so, the class
+                prototypes learnt in the PN framework are mapped to latent attack signatures. For more information
+                on the prototypical classification mechanism in our neural modules, the reader is referred to ASAP.
+            </p>
+        
+</body>
+
+</html>

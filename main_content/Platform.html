@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smartville Documentation</title>
+    <!-- Collegamento al file CSS esterno -->
+    <link rel="stylesheet" href="../style.css">
+    <script src="../script.js" defer></script>
+</head>
+
+<body>
+
+    <div class="sidebar">
+        <a href="Intro.html">Introduction</a>
+        <a href="Installation.html">Installation</a>
+        <a href="Usage.html">Usage</a>
+        <a href="Background.html">Background</a>
+        <a href="Docker.html">Docker Containers</a>
+        <a href="Platform.html">Grafana, Kafka, Prometheus</a>
+        <a href="PN.html">Prototypical Networks</a>
+        <a href="License.html">License</a>
+        <a href="Citation.html">Citation</a>
+        <a href="javascript:void(0) " onclick="toggleSubcategories('codeSubcategories')">Code</a>
+        <div id="codeSubcategories" style="display:none;">
+            <a href="../pox_controller/pox_controller.html" style="padding-left:20px;">pox_controller</a>
+            <ul id="poxControllerSubcategories" style="display:none;">
+                <li><a href="javascript:void(0)" style="padding-left:40px;"
+                        onclick="showContent('neural_models', true)">Neural models</a></li>
+                <li><a href="javascript:void(0)" style="padding-left:40px;"
+                        onclick="showContent('controller_brain', true)">Controller brain</a></li>
+                <li><a href="javascript:void(0)" style="padding-left:40px;"
+                        onclick="showContent('graph_generator', true)">Graph generator</a></li>
+                <li><a href="javascript:void(0)" style="padding-left:40px;"
+                        onclick="showContent('consumer_thread', true)">Consumer Thread</a></li>
+                <li><a href="javascript:void(0)" style="padding-left:40px;"
+                        onclick="showContent('smart_controller', true)">Smart Controller</a></li>
+                <li><a href="javascript:void(0)" style="padding-left:40px;" onclick="showContent('ai', true)">Ai</a>
+                </li>
+
+            </ul>
+        </div>
+    </div>
+    <div class="main-content">
+        <div class="header">
+            <h1><a href="../index.html" style="text-decoration: none;">Smartville</h1></a>
+            <p>This is the official SmartVille repository</p>
+            <p>Smartville is an open-source testbed based on GNS3, Pytorch, and Docker for training and testing online
+                intrusion detection systems based on machine learning.</p>
+            <p>Feel free to contribute!</p>
+            <p>The related paper <em>"SmartVille: an open-source SDN online-intrusion detection testbed"</em> is under
+                review. Stay tuned!</p>
+        </div>
+
+
+        <h2>Grafana, Kafka, Prometheus</h2>
+        <p>Apache Kafka is a distributed data streaming platform commonly referred to as a messaging system. It
+            is capable of publishing messages, storing, and processing records in real-time. Kafka handles
+            immense volumes of data where multiple clients can consume or publish messages on its topics. In our
+            testbed, it's used by the nodes that act as producers to send information related to their CPU, RAM,
+            and network-related metrics while creating a new topic for each of them. The controller will then
+            connect as a consumer to the Kafka server to consume this data.</p>
+        <p>Prometheus is a system for monitoring systems and services. It collects metrics from configured
+            targets at defined intervals, evaluates rule expressions, displays the results, and can trigger
+            alerts when specified conditions are observed. In our work, Prometheus is used to guarantee the
+            persistence of data. All the information sent to the Kafka server is saved into a NoSQL database by
+            Prometheus.</p>
+        <p>Grafana is an interactive open-source data visualization platform developed by Grafana Labs. It
+            allows users to view data through unified tables and charts on a single or multiple dashboards,
+            making interpretation and understanding easier. In our work, Grafana and Prometheus work in tandem.
+            Once the data is saved persistently by Prometheus, it's then retrieved by Grafana to build and show
+            a comprehensive dashboard of each topic to the user.</p>
+        <img src="https://github.com/DISTA-IoT/smartville/blob/release_1.0/readme_imgs/kafka.png?raw=true">
+        <p>As a result of these system interactions, the user can view a dashboard of the devices' status in the
+            network. The persistent data is then made available for further usage by the controller.</p>
+
+</body>
+
+</html>
